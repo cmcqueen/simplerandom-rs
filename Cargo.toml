@@ -1,0 +1,15 @@
+[package]
+name = "simplerandom"
+version = "0.1.0"
+authors = ["Craig McQueen <craig.mcqueen@innerrange.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/cmcqueen/simplerandom-rs"
+keywords = ["random", "rng"]
+categories = ["algorithms", "no-std"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand_core = "0.5"
