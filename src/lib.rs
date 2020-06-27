@@ -16,6 +16,14 @@ pub struct MWC2 {
     lower: u32,
 }
 
+#[derive(Debug)]
+pub struct KISS {
+    mwc2: MWC2,
+    cong: Cong,
+    shr3: Shr3,
+}
+
+
 impl Cong {
     pub fn new() -> Cong {
         Cong {
@@ -103,6 +111,27 @@ impl MWC2 {
 
         self.next_upper();
         self.next_lower();
+
+        self.current()
+    }
+}
+
+impl KISS {
+    pub fn new() -> KISS {
+        KISS {
+            mwc2: MWC2::new(),
+            cong: Cong::new(),
+            shr3: Shr3::new(),
+        }
+    }
+    pub fn current(&self) -> u32 {
+        let new_value = Wrapping::<u32>(self.mwc2.current() ^ self.cong.cong) + Wrapping::<u32>(self.shr3.shr3);
+        new_value.0
+    }
+    pub fn next(&mut self) -> u32 {
+        self.mwc2.next();
+        self.cong.next();
+        self.shr3.next();
 
         self.current()
     }
