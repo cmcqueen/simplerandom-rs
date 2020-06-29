@@ -1,67 +1,38 @@
-use std::num::Wrapping;
+
+/* Cong ----------------------------------------------------------------------*/
 
 #[derive(Debug)]
 pub struct Cong {
     cong: u32,
 }
 
-#[derive(Debug)]
-pub struct Shr3 {
-    shr3: u32,
-}
-
-#[derive(Debug)]
-pub struct MWC2 {
-    upper: u32,
-    lower: u32,
-}
-
-#[derive(Debug)]
-pub struct KISS {
-    mwc2: MWC2,
-    cong: Cong,
-    shr3: Shr3,
-}
-
-#[derive(Debug)]
-pub struct LFSR88 {
-    z1: u32,
-    z2: u32,
-    z3: u32,
-}
-
-#[derive(Debug)]
-pub struct LFSR113 {
-    z1: u32,
-    z2: u32,
-    z3: u32,
-    z4: u32,
-}
-
-
 impl Cong {
     pub fn new() -> Cong {
         Cong {
-            cong: 1,
+            cong: 0,
         }
     }
     pub fn next(&mut self) -> u32 {
-        let mut cong = Wrapping::<u32>(self.cong);
-
-        cong = Wrapping::<u32>(69069) * cong + Wrapping::<u32>(12345);
-        self.cong = cong.0;
-
+        self.cong = self.cong.wrapping_mul(69069).wrapping_add(12345);
         self.cong
     }
 }
 
-impl Shr3 {
-    pub fn new() -> Shr3 {
-        Shr3 {
+
+/* SHR3 ----------------------------------------------------------------------*/
+
+#[derive(Debug)]
+pub struct SHR3 {
+    shr3: u32,
+}
+
+impl SHR3 {
+    pub fn new() -> SHR3 {
+        SHR3 {
             shr3: 1,
         }
     }
-    pub fn sanitise(&mut self) {
+    fn sanitise(&mut self) {
         if self.shr3 == 0 {
             self.shr3 = 1;
         }
@@ -79,6 +50,15 @@ impl Shr3 {
     }
 }
 
+
+/* MWC2 ----------------------------------------------------------------------*/
+
+#[derive(Debug)]
+pub struct MWC2 {
+    upper: u32,
+    lower: u32,
+}
+
 impl MWC2 {
     pub fn new() -> MWC2 {
         MWC2 {
@@ -86,7 +66,7 @@ impl MWC2 {
             lower: 1,
         }
     }
-    pub fn sanitise_upper(&mut self) {
+    fn sanitise_upper(&mut self) {
         if self.upper > 0x9068FFFF {
             self.upper -= 0x9068FFFF;
         }
@@ -97,7 +77,7 @@ impl MWC2 {
             }
         }
     }
-    pub fn sanitise_lower(&mut self) {
+    fn sanitise_lower(&mut self) {
         if self.lower > 0x464FFFFF {
             self.lower -= 0x464FFFFF;
         }
@@ -108,17 +88,14 @@ impl MWC2 {
             }
         }
     }
-    pub fn next_upper(&mut self) {
-        let new_upper = Wrapping::<u32>(36969) * Wrapping::<u32>(self.upper & 0xFFFF) + Wrapping::<u32>(self.upper >> 16);
-        self.upper = new_upper.0
+    fn next_upper(&mut self) {
+        self.upper = (self.upper & 0xFFFF).wrapping_mul(36969).wrapping_add(self.upper >> 16);
     }
-    pub fn next_lower(&mut self) {
-        let new_lower = Wrapping::<u32>(18000) * Wrapping::<u32>(self.lower & 0xFFFF) + Wrapping::<u32>(self.lower >> 16);
-        self.lower = new_lower.0
+    fn next_lower(&mut self) {
+        self.lower = (self.lower & 0xFFFF).wrapping_mul(18000).wrapping_add(self.lower >> 16);
     }
-    pub fn current(&self) -> u32 {
-        let new_value = Wrapping::<u32>(self.upper << 16) + Wrapping::<u32>(self.upper >> 16) + Wrapping::<u32>(self.lower);
-        new_value.0
+    fn current(&self) -> u32 {
+        self.lower.wrapping_add(self.upper << 16).wrapping_add(self.upper >> 16)
     }
     pub fn next(&mut self) -> u32 {
         self.sanitise_upper();
@@ -131,17 +108,26 @@ impl MWC2 {
     }
 }
 
+
+/* KISS ----------------------------------------------------------------------*/
+
+#[derive(Debug)]
+pub struct KISS {
+    mwc2: MWC2,
+    cong: Cong,
+    shr3: SHR3,
+}
+
 impl KISS {
     pub fn new() -> KISS {
         KISS {
             mwc2: MWC2::new(),
             cong: Cong::new(),
-            shr3: Shr3::new(),
+            shr3: SHR3::new(),
         }
     }
-    pub fn current(&self) -> u32 {
-        let new_value = Wrapping::<u32>(self.mwc2.current() ^ self.cong.cong) + Wrapping::<u32>(self.shr3.shr3);
-        new_value.0
+    fn current(&self) -> u32 {
+        (self.mwc2.current() ^ self.cong.cong).wrapping_add(self.shr3.shr3)
     }
     pub fn next(&mut self) -> u32 {
         self.mwc2.next();
@@ -152,15 +138,27 @@ impl KISS {
     }
 }
 
-fn next_z(z: u32, a: u8, b: u8, c: u8, mask: u32) -> u32 {
+
+/* LFSR ----------------------------------------------------------------------*/
+
+fn lfsr_next_z(z: u32, a: u8, b: u8, c: u8, mask: u32) -> u32 {
     let b = ((z << a) ^ z) >> b;
     ((z & mask) << c) ^ b
 }
 
+/* LFSR88 --------------------------------------------------------------------*/
+
+#[derive(Debug)]
+pub struct LFSR88 {
+    z1: u32,
+    z2: u32,
+    z3: u32,
+}
+
 impl LFSR88 {
-    const Z1_MIN: u32 = 2;
-    const Z2_MIN: u32 = 8;
-    const Z3_MIN: u32 = 16;
+    //const Z1_MIN: u32 = 2;
+    //const Z2_MIN: u32 = 8;
+    //const Z3_MIN: u32 = 16;
 
     pub fn new() -> LFSR88 {
         LFSR88 {
@@ -169,16 +167,16 @@ impl LFSR88 {
             z3: 0xFFFFFFFF,
         }
     }
-    pub fn next_z1(&mut self) {
-        self.z1 = next_z(self.z1, 13, 19, 12, 0xFFFFFFFE);
+    fn next_z1(&mut self) {
+        self.z1 = lfsr_next_z(self.z1, 13, 19, 12, 0xFFFFFFFE);
     }
-    pub fn next_z2(&mut self) {
-        self.z2 = next_z(self.z2, 2, 25, 4, 0xFFFFFFF8);
+    fn next_z2(&mut self) {
+        self.z2 = lfsr_next_z(self.z2, 2, 25, 4, 0xFFFFFFF8);
     }
-    pub fn next_z3(&mut self) {
-        self.z3 = next_z(self.z3, 3, 11, 17, 0xFFFFFFF0);
+    fn next_z3(&mut self) {
+        self.z3 = lfsr_next_z(self.z3, 3, 11, 17, 0xFFFFFFF0);
     }
-    pub fn current(&self) -> u32 {
+    fn current(&self) -> u32 {
         self.z1 ^ self.z2 ^ self.z3
     }
     pub fn next(&mut self) -> u32 {
@@ -190,11 +188,22 @@ impl LFSR88 {
     }
 }
 
+
+/* LFSR113 -------------------------------------------------------------------*/
+
+#[derive(Debug)]
+pub struct LFSR113 {
+    z1: u32,
+    z2: u32,
+    z3: u32,
+    z4: u32,
+}
+
 impl LFSR113 {
-    const Z1_MIN: u32 = 2;
-    const Z2_MIN: u32 = 8;
-    const Z3_MIN: u32 = 16;
-    const Z4_MIN: u32 = 128;
+    //const Z1_MIN: u32 = 2;
+    //const Z2_MIN: u32 = 8;
+    //const Z3_MIN: u32 = 16;
+    //const Z4_MIN: u32 = 128;
 
     pub fn new() -> LFSR113 {
         LFSR113 {
@@ -204,19 +213,19 @@ impl LFSR113 {
             z4: 0xFFFFFFFF,
         }
     }
-    pub fn next_z1(&mut self) {
-        self.z1 = next_z(self.z1, 6, 13, 18, 0xFFFFFFFE);
+    fn next_z1(&mut self) {
+        self.z1 = lfsr_next_z(self.z1, 6, 13, 18, 0xFFFFFFFE);
     }
-    pub fn next_z2(&mut self) {
-        self.z2 = next_z(self.z2, 2, 27, 2, 0xFFFFFFF8);
+    fn next_z2(&mut self) {
+        self.z2 = lfsr_next_z(self.z2, 2, 27, 2, 0xFFFFFFF8);
     }
-    pub fn next_z3(&mut self) {
-        self.z3 = next_z(self.z3, 13, 21, 7, 0xFFFFFFF0);
+    fn next_z3(&mut self) {
+        self.z3 = lfsr_next_z(self.z3, 13, 21, 7, 0xFFFFFFF0);
     }
-    pub fn next_z4(&mut self) {
-        self.z4 = next_z(self.z4, 3, 12, 13, 0xFFFFFF80);
+    fn next_z4(&mut self) {
+        self.z4 = lfsr_next_z(self.z4, 3, 12, 13, 0xFFFFFF80);
     }
-    pub fn current(&self) -> u32 {
+    fn current(&self) -> u32 {
         self.z1 ^ self.z2 ^ self.z3 ^ self.z4
     }
     pub fn next(&mut self) -> u32 {
