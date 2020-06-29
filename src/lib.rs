@@ -1,3 +1,4 @@
+use rand_core::{RngCore, Error, impls};
 
 /* Cong ----------------------------------------------------------------------*/
 
@@ -12,9 +13,21 @@ impl Cong {
             cong: 0,
         }
     }
-    pub fn next(&mut self) -> u32 {
+}
+
+impl RngCore for Cong {
+    fn next_u32(&mut self) -> u32 {
         self.cong = self.cong.wrapping_mul(69069).wrapping_add(12345);
         self.cong
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
     }
 }
 
@@ -37,7 +50,10 @@ impl SHR3 {
             self.shr3 = 1;
         }
     }
-    pub fn next(&mut self) -> u32 {
+}
+
+impl RngCore for SHR3 {
+    fn next_u32(&mut self) -> u32 {
         self.sanitise();
         let mut shr3 = self.shr3;
     
@@ -47,6 +63,15 @@ impl SHR3 {
         self.shr3 = shr3;
         
         shr3
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
     }
 }
 
@@ -97,7 +122,9 @@ impl MWC2 {
     fn current(&self) -> u32 {
         self.lower.wrapping_add(self.upper << 16).wrapping_add(self.upper >> 16)
     }
-    pub fn next(&mut self) -> u32 {
+}
+impl RngCore for MWC2 {
+    fn next_u32(&mut self) -> u32 {
         self.sanitise_upper();
         self.sanitise_lower();
 
@@ -105,6 +132,15 @@ impl MWC2 {
         self.next_lower();
 
         self.current()
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
     }
 }
 
@@ -129,12 +165,23 @@ impl KISS {
     fn current(&self) -> u32 {
         (self.mwc2.current() ^ self.cong.cong).wrapping_add(self.shr3.shr3)
     }
-    pub fn next(&mut self) -> u32 {
-        self.mwc2.next();
-        self.cong.next();
-        self.shr3.next();
+}
+impl RngCore for KISS {
+    fn next_u32(&mut self) -> u32 {
+        self.mwc2.next_u32();
+        self.cong.next_u32();
+        self.shr3.next_u32();
 
         self.current()
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
     }
 }
 
@@ -179,12 +226,23 @@ impl LFSR88 {
     fn current(&self) -> u32 {
         self.z1 ^ self.z2 ^ self.z3
     }
-    pub fn next(&mut self) -> u32 {
+}
+impl RngCore for LFSR88 {
+    fn next_u32(&mut self) -> u32 {
         self.next_z1();
         self.next_z2();
         self.next_z3();
 
         self.current()
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
     }
 }
 
@@ -228,12 +286,23 @@ impl LFSR113 {
     fn current(&self) -> u32 {
         self.z1 ^ self.z2 ^ self.z3 ^ self.z4
     }
-    pub fn next(&mut self) -> u32 {
+}
+impl RngCore for LFSR113 {
+    fn next_u32(&mut self) -> u32 {
         self.next_z1();
         self.next_z2();
         self.next_z3();
         self.next_z4();
 
         self.current()
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
     }
 }
