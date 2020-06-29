@@ -8,9 +8,9 @@ pub struct Cong {
 }
 
 impl Cong {
-    pub fn new() -> Cong {
+    pub fn new(seed1: u32) -> Cong {
         Cong {
-            cong: 0,
+            cong: seed1,
         }
     }
 }
@@ -40,14 +40,14 @@ pub struct SHR3 {
 }
 
 impl SHR3 {
-    pub fn new() -> SHR3 {
+    pub fn new(seed1: u32) -> SHR3 {
         SHR3 {
-            shr3: 1,
+            shr3: seed1,
         }
     }
     fn sanitise(&mut self) {
         if self.shr3 == 0 {
-            self.shr3 = 1;
+            self.shr3 = 0xFFFFFFFF;
         }
     }
 }
@@ -85,10 +85,10 @@ pub struct MWC2 {
 }
 
 impl MWC2 {
-    pub fn new() -> MWC2 {
+    pub fn new(seed1: u32, seed2: u32) -> MWC2 {
         MWC2 {
-            upper: 1,
-            lower: 1,
+            upper: seed1,
+            lower: seed2,
         }
     }
     fn sanitise_upper(&mut self) {
@@ -155,11 +155,11 @@ pub struct KISS {
 }
 
 impl KISS {
-    pub fn new() -> KISS {
+    pub fn new(seed1: u32, seed2: u32, seed3: u32, seed4: u32) -> KISS {
         KISS {
-            mwc2: MWC2::new(),
-            cong: Cong::new(),
-            shr3: SHR3::new(),
+            mwc2: MWC2::new(seed1, seed2),
+            cong: Cong::new(seed3),
+            shr3: SHR3::new(seed4),
         }
     }
     fn current(&self) -> u32 {
@@ -188,6 +188,18 @@ impl RngCore for KISS {
 
 /* LFSR ----------------------------------------------------------------------*/
 
+fn lfsr_seed_z(seed: u32) -> u32 {
+    seed ^ (seed << 16)
+}
+
+fn lfsr_sanitise_z(z: u32, min_value: u32) -> u32 {
+    if z < min_value {
+        z ^ 0xFFFFFFFF
+    } else {
+        z
+    }
+}
+
 fn lfsr_next_z(z: u32, a: u8, b: u8, c: u8, mask: u32) -> u32 {
     let b = ((z << a) ^ z) >> b;
     ((z & mask) << c) ^ b
@@ -203,16 +215,25 @@ pub struct LFSR88 {
 }
 
 impl LFSR88 {
-    //const Z1_MIN: u32 = 2;
-    //const Z2_MIN: u32 = 8;
-    //const Z3_MIN: u32 = 16;
+    const Z1_MIN: u32 = 2;
+    const Z2_MIN: u32 = 8;
+    const Z3_MIN: u32 = 16;
 
-    pub fn new() -> LFSR88 {
+    pub fn new(seed1: u32, seed2: u32, seed3: u32) -> LFSR88 {
         LFSR88 {
-            z1: 0xFFFFFFFF,
-            z2: 0xFFFFFFFF,
-            z3: 0xFFFFFFFF,
+            z1: lfsr_seed_z(seed1),
+            z2: lfsr_seed_z(seed2),
+            z3: lfsr_seed_z(seed3),
         }
+    }
+    fn sanitise_z1(&mut self) {
+        self.z1 = lfsr_sanitise_z(self.z1, LFSR88::Z1_MIN);
+    }
+    fn sanitise_z2(&mut self) {
+        self.z2 = lfsr_sanitise_z(self.z2, LFSR88::Z2_MIN);
+    }
+    fn sanitise_z3(&mut self) {
+        self.z3 = lfsr_sanitise_z(self.z3, LFSR88::Z3_MIN);
     }
     fn next_z1(&mut self) {
         self.z1 = lfsr_next_z(self.z1, 13, 19, 12, 0xFFFFFFFE);
@@ -229,8 +250,11 @@ impl LFSR88 {
 }
 impl RngCore for LFSR88 {
     fn next_u32(&mut self) -> u32 {
+        self.sanitise_z1();
         self.next_z1();
+        self.sanitise_z2();
         self.next_z2();
+        self.sanitise_z3();
         self.next_z3();
 
         self.current()
@@ -258,18 +282,30 @@ pub struct LFSR113 {
 }
 
 impl LFSR113 {
-    //const Z1_MIN: u32 = 2;
-    //const Z2_MIN: u32 = 8;
-    //const Z3_MIN: u32 = 16;
-    //const Z4_MIN: u32 = 128;
+    const Z1_MIN: u32 = 2;
+    const Z2_MIN: u32 = 8;
+    const Z3_MIN: u32 = 16;
+    const Z4_MIN: u32 = 128;
 
-    pub fn new() -> LFSR113 {
+    pub fn new(seed1: u32, seed2: u32, seed3: u32, seed4: u32) -> LFSR113 {
         LFSR113 {
-            z1: 0xFFFFFFFF,
-            z2: 0xFFFFFFFF,
-            z3: 0xFFFFFFFF,
-            z4: 0xFFFFFFFF,
+            z1: lfsr_seed_z(seed1),
+            z2: lfsr_seed_z(seed2),
+            z3: lfsr_seed_z(seed3),
+            z4: lfsr_seed_z(seed4),
         }
+    }
+    fn sanitise_z1(&mut self) {
+        self.z1 = lfsr_sanitise_z(self.z1, LFSR113::Z1_MIN);
+    }
+    fn sanitise_z2(&mut self) {
+        self.z2 = lfsr_sanitise_z(self.z2, LFSR113::Z2_MIN);
+    }
+    fn sanitise_z3(&mut self) {
+        self.z3 = lfsr_sanitise_z(self.z3, LFSR113::Z3_MIN);
+    }
+    fn sanitise_z4(&mut self) {
+        self.z4 = lfsr_sanitise_z(self.z4, LFSR113::Z4_MIN);
     }
     fn next_z1(&mut self) {
         self.z1 = lfsr_next_z(self.z1, 6, 13, 18, 0xFFFFFFFE);
@@ -289,9 +325,13 @@ impl LFSR113 {
 }
 impl RngCore for LFSR113 {
     fn next_u32(&mut self) -> u32 {
+        self.sanitise_z1();
         self.next_z1();
+        self.sanitise_z2();
         self.next_z2();
+        self.sanitise_z3();
         self.next_z3();
+        self.sanitise_z4();
         self.next_z4();
 
         self.current()
