@@ -1,4 +1,10 @@
+extern crate num_traits;
+
 use rand_core::{RngCore, Error, impls};
+use num_traits::{PrimInt, WrappingAdd, WrappingMul};
+use std::ops::SubAssign;
+use std::convert::TryInto;
+
 
 /* Cong ----------------------------------------------------------------------*/
 
@@ -84,22 +90,29 @@ pub struct MWC2 {
     lower: u32,
 }
 
-fn mwc32_sanitise(x: u32, limit: u32) -> u32 {
+fn mwc_next<T>(x: T, multiplier: T) -> T
+    where T: PrimInt + WrappingAdd + WrappingMul
+{
+    let width_bits: usize = T::zero().count_zeros().try_into().unwrap();
+    let half_width_bits = width_bits / 2;
+    let half_width_mask: T = T::max_value() >> half_width_bits;
+    (x & half_width_mask).wrapping_mul(&multiplier).wrapping_add(&(x >> half_width_bits))
+}
+
+fn mwc_sanitise<T>(x: T, limit: T) -> T
+    where T: PrimInt + SubAssign
+{
     let mut temp = x;
     if temp >= limit {
         temp -= limit;
     }
-    if temp == 0 {
-        temp = x ^ 0xFFFFFFFF;
+    if temp == T::zero() {
+        temp = x ^ T::max_value();
         if temp >= limit {
             temp -= limit;
         }
     }
     temp
-}
-
-fn mwc32_next(x: u32, multiplier: u32) -> u32 {
-    (x & 0xFFFF).wrapping_mul(multiplier).wrapping_add(x >> 16)
 }
 
 impl MWC2 {
@@ -115,11 +128,11 @@ impl MWC2 {
 }
 impl RngCore for MWC2 {
     fn next_u32(&mut self) -> u32 {
-        self.upper = mwc32_sanitise(self.upper, 0x9068FFFF);
-        self.lower = mwc32_sanitise(self.lower, 0x464FFFFF);
+        self.upper = mwc_sanitise(self.upper, 0x9068FFFF);
+        self.lower = mwc_sanitise(self.lower, 0x464FFFFF);
 
-        self.upper = mwc32_next(self.upper, 36969);
-        self.lower = mwc32_next(self.lower, 18000);
+        self.upper = mwc_next(self.upper, 36969);
+        self.lower = mwc_next(self.lower, 18000);
 
         self.current()
     }
@@ -217,24 +230,6 @@ pub struct MWC64 {
     mwc: u64,
 }
 
-fn mwc64_sanitise(x: u64, limit: u64) -> u64 {
-    let mut temp = x;
-    while temp >= limit {
-        temp -= limit;
-    }
-    if temp == 0 {
-        temp = x ^ 0xFFFFFFFFFFFFFFFF;
-        while temp >= limit {
-            temp -= limit;
-        }
-    }
-    temp
-}
-
-fn mwc64_next(x: u64, multiplier: u64) -> u64 {
-    (x & 0xFFFFFFFF).wrapping_mul(multiplier).wrapping_add(x >> 32)
-}
-
 impl MWC64 {
     pub fn new(seed1: u32, seed2: u32) -> MWC64 {
         MWC64 {
@@ -242,10 +237,10 @@ impl MWC64 {
         }
     }
     fn sanitise(&mut self) {
-        self.mwc = mwc64_sanitise(self.mwc, 0x29A65EACFFFFFFFF);
+        self.mwc = mwc_sanitise(self.mwc, 0x29A65EACFFFFFFFF);
     }
     fn next_mwc(&mut self) {
-        self.mwc = mwc64_next(self.mwc, 698769069);
+        self.mwc = mwc_next(self.mwc, 698769069);
     }
     fn current(&self) -> u32 {
         self.mwc as u32
