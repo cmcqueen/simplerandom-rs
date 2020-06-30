@@ -10,10 +10,8 @@ fn main() {
     let mut s = simplerandom::KISS2::new(1, 2, 3, 4);
     //let mut s = simplerandom::LFSR88::new(1, 2, 3);
     //let mut s = simplerandom::LFSR113::new(1, 2, 3, 4);
-    let s_result = s.next_u32();
-    println!("{}, {:?}", s_result, s);
-    let s_result = s.next_u32();
-    println!("{}, {:?}", s_result, s);
-    let s_result = s.next_u32();
-    println!("{}, {:?}", s_result, s);
+    for _ in 0..4 {
+        let s_result = s.next_u32();
+        println!("{}, {:?}", s_result, s);
+    }
 }
