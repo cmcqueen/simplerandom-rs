@@ -173,7 +173,7 @@ impl RngCore for MWC1 {
 
 #[derive(Debug)]
 pub struct KISS {
-    mwc2: MWC2,
+    mwc: MWC2,
     cong: Cong,
     shr3: SHR3,
 }
@@ -181,18 +181,18 @@ pub struct KISS {
 impl KISS {
     pub fn new(seed1: u32, seed2: u32, seed3: u32, seed4: u32) -> KISS {
         KISS {
-            mwc2: MWC2::new(seed1, seed2),
+            mwc: MWC2::new(seed1, seed2),
             cong: Cong::new(seed3),
             shr3: SHR3::new(seed4),
         }
     }
     fn current(&self) -> u32 {
-        (self.mwc2.current() ^ self.cong.cong).wrapping_add(self.shr3.shr3)
+        (self.mwc.current() ^ self.cong.cong).wrapping_add(self.shr3.shr3)
     }
 }
 impl RngCore for KISS {
     fn next_u32(&mut self) -> u32 {
-        self.mwc2.next_u32();
+        self.mwc.next_u32();
         self.cong.next_u32();
         self.shr3.next_u32();
 
@@ -256,6 +256,47 @@ impl RngCore for MWC64 {
         self.sanitise();
 
         self.next_mwc();
+
+        self.current()
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
+    }
+}
+
+
+/* KISS2 ---------------------------------------------------------------------*/
+
+#[derive(Debug)]
+pub struct KISS2 {
+    mwc: MWC64,
+    cong: Cong,
+    shr3: SHR3,
+}
+
+impl KISS2 {
+    pub fn new(seed1: u32, seed2: u32, seed3: u32, seed4: u32) -> KISS2 {
+        KISS2 {
+            mwc: MWC64::new(seed1, seed2),
+            cong: Cong::new(seed3),
+            shr3: SHR3::new(seed4),
+        }
+    }
+    fn current(&self) -> u32 {
+        self.mwc.current().wrapping_add(self.cong.cong).wrapping_add(self.shr3.shr3)
+    }
+}
+impl RngCore for KISS2 {
+    fn next_u32(&mut self) -> u32 {
+        self.mwc.next_u32();
+        self.cong.next_u32();
+        self.shr3.next_u32();
 
         self.current()
     }
