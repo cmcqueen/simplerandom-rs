@@ -321,7 +321,8 @@ fn lfsr_sanitise_z(z: u32, min_value: u32) -> u32 {
     }
 }
 
-fn lfsr_next_z(z: u32, a: u8, b: u8, c: u8, mask: u32) -> u32 {
+fn lfsr_next_z(z: u32, a: u8, b: u8, c: u8, min_value: u32) -> u32 {
+    let mask = 0xFFFFFFFF - (min_value - 1);
     let b = ((z << a) ^ z) >> b;
     ((z & mask) << c) ^ b
 }
@@ -336,10 +337,6 @@ pub struct LFSR88 {
 }
 
 impl LFSR88 {
-    const Z1_MASK: u32 = 0xFFFFFFFE;
-    const Z2_MASK: u32 = 0xFFFFFFF8;
-    const Z3_MASK: u32 = 0xFFFFFFF0;
-
     const Z1_MIN: u32 = 2;
     const Z2_MIN: u32 = 8;
     const Z3_MIN: u32 = 16;
@@ -361,13 +358,13 @@ impl LFSR88 {
         self.z3 = lfsr_sanitise_z(self.z3, LFSR88::Z3_MIN);
     }
     fn next_z1(&mut self) {
-        self.z1 = lfsr_next_z(self.z1, 13, 19, 12, LFSR88::Z1_MASK);
+        self.z1 = lfsr_next_z(self.z1, 13, 19, 12, LFSR88::Z1_MIN);
     }
     fn next_z2(&mut self) {
-        self.z2 = lfsr_next_z(self.z2, 2, 25, 4, LFSR88::Z2_MASK);
+        self.z2 = lfsr_next_z(self.z2, 2, 25, 4, LFSR88::Z2_MIN);
     }
     fn next_z3(&mut self) {
-        self.z3 = lfsr_next_z(self.z3, 3, 11, 17, LFSR88::Z3_MASK);
+        self.z3 = lfsr_next_z(self.z3, 3, 11, 17, LFSR88::Z3_MIN);
     }
     fn current(&self) -> u32 {
         self.z1 ^ self.z2 ^ self.z3
@@ -407,11 +404,6 @@ pub struct LFSR113 {
 }
 
 impl LFSR113 {
-    const Z1_MASK: u32 = 0xFFFFFFFE;
-    const Z2_MASK: u32 = 0xFFFFFFF8;
-    const Z3_MASK: u32 = 0xFFFFFFF0;
-    const Z4_MASK: u32 = 0xFFFFFF80;
-
     const Z1_MIN: u32 = 2;
     const Z2_MIN: u32 = 8;
     const Z3_MIN: u32 = 16;
@@ -438,16 +430,16 @@ impl LFSR113 {
         self.z4 = lfsr_sanitise_z(self.z4, LFSR113::Z4_MIN);
     }
     fn next_z1(&mut self) {
-        self.z1 = lfsr_next_z(self.z1, 6, 13, 18, LFSR113::Z1_MASK);
+        self.z1 = lfsr_next_z(self.z1, 6, 13, 18, LFSR113::Z1_MIN);
     }
     fn next_z2(&mut self) {
-        self.z2 = lfsr_next_z(self.z2, 2, 27, 2, LFSR113::Z2_MASK);
+        self.z2 = lfsr_next_z(self.z2, 2, 27, 2, LFSR113::Z2_MIN);
     }
     fn next_z3(&mut self) {
-        self.z3 = lfsr_next_z(self.z3, 13, 21, 7, LFSR113::Z3_MASK);
+        self.z3 = lfsr_next_z(self.z3, 13, 21, 7, LFSR113::Z3_MIN);
     }
     fn next_z4(&mut self) {
-        self.z4 = lfsr_next_z(self.z4, 3, 12, 13, LFSR113::Z4_MASK);
+        self.z4 = lfsr_next_z(self.z4, 3, 12, 13, LFSR113::Z4_MIN);
     }
     fn current(&self) -> u32 {
         self.z1 ^ self.z2 ^ self.z3 ^ self.z4
