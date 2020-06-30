@@ -210,6 +210,67 @@ impl RngCore for KISS {
 }
 
 
+/* MWC64 ---------------------------------------------------------------------*/
+
+#[derive(Debug)]
+pub struct MWC64 {
+    mwc: u64,
+}
+
+fn mwc64_sanitise(x: u64, limit: u64) -> u64 {
+    let mut temp = x;
+    while temp >= limit {
+        temp -= limit;
+    }
+    if temp == 0 {
+        temp = x ^ 0xFFFFFFFFFFFFFFFF;
+        while temp >= limit {
+            temp -= limit;
+        }
+    }
+    temp
+}
+
+fn mwc64_next(x: u64, multiplier: u64) -> u64 {
+    (x & 0xFFFFFFFF).wrapping_mul(multiplier).wrapping_add(x >> 32)
+}
+
+impl MWC64 {
+    pub fn new(seed1: u32, seed2: u32) -> MWC64 {
+        MWC64 {
+            mwc: (((seed1 as u64) << 32) ^ (seed2 as u64)),
+        }
+    }
+    fn sanitise(&mut self) {
+        self.mwc = mwc64_sanitise(self.mwc, 0x29A65EACFFFFFFFF);
+    }
+    fn next_mwc(&mut self) {
+        self.mwc = mwc64_next(self.mwc, 698769069);
+    }
+    fn current(&self) -> u32 {
+        self.mwc as u32
+    }
+}
+impl RngCore for MWC64 {
+    fn next_u32(&mut self) -> u32 {
+        self.sanitise();
+
+        self.next_mwc();
+
+        self.current()
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
+    }
+}
+
+
 /* LFSR ----------------------------------------------------------------------*/
 
 fn lfsr_seed_z(seed: u32) -> u32 {
