@@ -84,6 +84,24 @@ pub struct MWC2 {
     lower: u32,
 }
 
+fn mwc32_sanitise(x: u32, limit: u32) -> u32 {
+    let mut temp = x;
+    if temp >= limit {
+        temp -= limit;
+    }
+    if temp == 0 {
+        temp = x ^ 0xFFFFFFFF;
+        if temp >= limit {
+            temp -= limit;
+        }
+    }
+    temp
+}
+
+fn mwc32_next(x: u32, multiplier: u32) -> u32 {
+    (x & 0xFFFF).wrapping_mul(multiplier).wrapping_add(x >> 16)
+}
+
 impl MWC2 {
     pub fn new(seed1: u32, seed2: u32) -> MWC2 {
         MWC2 {
@@ -91,46 +109,52 @@ impl MWC2 {
             lower: seed2,
         }
     }
-    fn sanitise_upper(&mut self) {
-        if self.upper > 0x9068FFFF {
-            self.upper -= 0x9068FFFF;
-        }
-        if self.upper == 0 {
-            self.upper = 0xFFFFFFFF;
-            if self.upper > 0x9068FFFF {
-                self.upper -= 0x9068FFFF;
-            }
-        }
-    }
-    fn sanitise_lower(&mut self) {
-        if self.lower > 0x464FFFFF {
-            self.lower -= 0x464FFFFF;
-        }
-        if self.lower == 0 {
-            self.lower = 0xFFFFFFFF;
-            if self.lower > 0x464FFFFF {
-                self.lower -= 0x464FFFFF;
-            }
-        }
-    }
-    fn next_upper(&mut self) {
-        self.upper = (self.upper & 0xFFFF).wrapping_mul(36969).wrapping_add(self.upper >> 16);
-    }
-    fn next_lower(&mut self) {
-        self.lower = (self.lower & 0xFFFF).wrapping_mul(18000).wrapping_add(self.lower >> 16);
-    }
     fn current(&self) -> u32 {
         self.lower.wrapping_add(self.upper << 16).wrapping_add(self.upper >> 16)
     }
 }
 impl RngCore for MWC2 {
     fn next_u32(&mut self) -> u32 {
-        self.sanitise_upper();
-        self.sanitise_lower();
+        self.upper = mwc32_sanitise(self.upper, 0x9068FFFF);
+        self.lower = mwc32_sanitise(self.lower, 0x464FFFFF);
 
-        self.next_upper();
-        self.next_lower();
+        self.upper = mwc32_next(self.upper, 36969);
+        self.lower = mwc32_next(self.lower, 18000);
 
+        self.current()
+    }
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest)
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
+    }
+}
+
+
+/* MWC1 ----------------------------------------------------------------------*/
+
+#[derive(Debug)]
+pub struct MWC1 {
+    mwc: MWC2,
+}
+
+impl MWC1 {
+    pub fn new(seed1: u32, seed2: u32) -> MWC1 {
+        MWC1 {
+            mwc: MWC2::new(seed1, seed2),
+        }
+    }
+    fn current(&self) -> u32 {
+        self.mwc.lower.wrapping_add(self.mwc.upper << 16)
+    }
+}
+impl RngCore for MWC1 {
+    fn next_u32(&mut self) -> u32 {
+        self.mwc.next_u32();
         self.current()
     }
     fn next_u64(&mut self) -> u64 {
