@@ -1,4 +1,3 @@
-extern crate num_traits;
 
 use rand_core::{RngCore, Error, impls};
 use num_traits::{PrimInt, WrappingAdd, WrappingMul};
