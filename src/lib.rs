@@ -3,7 +3,6 @@ extern crate num_traits;
 use rand_core::{RngCore, Error, impls};
 use num_traits::{PrimInt, WrappingAdd, WrappingMul};
 use std::ops::SubAssign;
-use std::convert::TryInto;
 
 
 /* Cong ----------------------------------------------------------------------*/
@@ -93,7 +92,7 @@ pub struct MWC2 {
 fn mwc_next<T>(x: T, multiplier: T) -> T
     where T: PrimInt + WrappingAdd + WrappingMul
 {
-    let width_bits: usize = T::zero().count_zeros().try_into().unwrap();
+    let width_bits = T::zero().count_zeros() as usize;
     let half_width_bits = width_bits / 2;
     let half_width_mask: T = T::max_value() >> half_width_bits;
     (x & half_width_mask).wrapping_mul(&multiplier).wrapping_add(&(x >> half_width_bits))
