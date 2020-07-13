@@ -3,6 +3,8 @@ use rand_core::{RngCore, Error, impls};
 use num_traits::{PrimInt, WrappingAdd, WrappingMul};
 use std::ops::SubAssign;
 
+pub mod maths;
+
 
 /* Cong ----------------------------------------------------------------------*/
 

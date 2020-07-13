@@ -1,7 +1,8 @@
 use rand_core::RngCore;
 //use rand::Rng;
 
-fn main() {
+
+fn test_new_and_next_u32() {
     //let mut s = simplerandom::Cong::new(1);
     //let mut s = simplerandom::SHR3::new(1);
     //let mut s = simplerandom::MWC1::new(1, 2);
@@ -16,4 +17,15 @@ fn main() {
         //println!("{}, {:?}", s.gen::<u32>(), s);
         //println!("{:?}", s.gen::<(f64)>());
     }
+}
+
+fn test_maths() {
+    println!("pow {}", simplerandom::maths::pow(123456789_u32, 123456789_u32));
+    println!("pow_mod {}", simplerandom::maths::pow_mod(123456789_u32, 123456789_u32, 99887766_u32));
+    println!("geom_series {}", simplerandom::maths::geom_series(12345_u32, 12345_u32));
+}
+
+fn main() {
+    //test_new_and_next_u32();
+    test_maths();
 }
