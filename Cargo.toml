@@ -1,7 +1,7 @@
 [package]
 name = "simplerandom"
 version = "0.1.0"
-authors = ["Craig McQueen <craig.mcqueen@innerrange.com>"]
+authors = ["Craig McQueen <craig@mcqueen.id.au>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/cmcqueen/simplerandom-rs"
