@@ -94,7 +94,7 @@
 //! [LFSR113 C double implementation](http://www.iro.umontreal.ca/~simardr/rng/lfsr113.c)  
 //! Pierre L'Ecuyer
 
-use rand_core::{RngCore, Error, impls};
+use rand_core::{RngCore, SeedableRng, Error, impls};
 use num_traits::{PrimInt, Unsigned, WrappingAdd, WrappingMul, Pow};
 use std::ops::SubAssign;
 
@@ -107,6 +107,17 @@ pub trait RngJumpAhead {
 }
 
 type BitColumnMatrix32 = bitcolumnmatrix::BitColumnMatrix::<u32, 32>;
+
+
+pub trait Seedable32Rng: Sized {
+    type Seed32: Sized + Default + AsMut<[u32]>;
+
+    fn from_seed32(seed: Self::Seed32) -> Self;
+
+    fn from_seed(seed: Self::Seed32) -> Self {
+        Self::from_seed32(seed)
+    }
+}
 
 
 /* Cong ----------------------------------------------------------------------*/
@@ -146,6 +157,7 @@ impl Cong {
     const M: u32 = 69069;
     const C: u32 = 12345;
     const CYCLE_LEN: u64 = 1 << 32;
+    const SEED32_WORDS: usize = 1;
 
     pub fn new(seed1: u32) -> Cong {
         Cong {
@@ -177,6 +189,26 @@ impl RngJumpAhead for Cong {
         let add_const = maths::wrapping_geom_series(Cong::M, n_mod).wrapping_mul(Cong::C);
         let cong = mult_exp.wrapping_mul(self.cong).wrapping_add(add_const);
         self.cong = cong;
+    }
+}
+
+impl Seedable32Rng for Cong {
+    type Seed32 = [u32; Cong::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        Cong {
+            cong: seed[0],
+        }
+    }
+}
+
+impl SeedableRng for Cong {
+    type Seed = [u8; Cong::SEED32_WORDS*4];
+
+    fn from_seed(seed: Self::Seed) -> Self {
+        Cong {
+            cong: seed[0] as u32,
+        }
     }
 }
 

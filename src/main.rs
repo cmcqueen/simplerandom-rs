@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use rand_core::RngCore;
-use simplerandom::RngJumpAhead;
+use simplerandom::{RngJumpAhead, Seedable32Rng};
 //use rand::Rng;
 
 fn test_new_and_next_u32() {
@@ -37,8 +37,28 @@ fn test_maths() {
     println!("wrapping_geom_series {}", simplerandom::maths::wrapping_geom_series(12345_u32, 12345_u32));
 }
 
+fn test_seed() {
+    let s = [2_u32; 1];
+
+    let mut rng = simplerandom::Cong::from_seed32(s);
+    //let mut rng = simplerandom::SHR3::from_seed(s);
+    //let mut rng = simplerandom::MWC1::from_seed(s);
+    //let mut rng = simplerandom::MWC2::from_seed(s);
+    //let mut rng = simplerandom::KISS::from_seed(s);
+    //let mut rng = simplerandom::MWC64::from_seed(s);
+    //let mut rng = simplerandom::KISS2::from_seed(s);
+    //let mut rng = simplerandom::LFSR88::from_seed(s);
+    //let mut rng = simplerandom::LFSR113::from_seed(s);
+
+    for _ in 0..4 {
+        let rng_result = rng.next_u32();
+        println!("{}, {:?}", rng_result, rng);
+    }
+}
+
 fn main() {
-    test_new_and_next_u32();
+//    test_new_and_next_u32();
+    test_seed();
 
     println!("");
     test_maths();
