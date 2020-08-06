@@ -270,16 +270,19 @@ pub struct MWC64 {
 }
 
 impl MWC64 {
+    const M: u64 = 698769069;
+    const MOD: u64 = (MWC64::M << 32) - 1;
+
     pub fn new(seed1: u32, seed2: u32) -> MWC64 {
         MWC64 {
             mwc: (((seed1 as u64) << 32) ^ (seed2 as u64)),
         }
     }
     fn sanitise(&mut self) {
-        self.mwc = mwc_sanitise(self.mwc, 0x29A65EACFFFFFFFF);
+        self.mwc = mwc_sanitise(self.mwc, MWC64::MOD);
     }
     fn next_mwc(&mut self) {
-        self.mwc = mwc_next(self.mwc, 698769069);
+        self.mwc = mwc_next(self.mwc, MWC64::M);
     }
     fn current(&self) -> u32 {
         self.mwc as u32
@@ -301,6 +304,13 @@ impl RngCore for MWC64 {
     }
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
         Ok(self.fill_bytes(dest))
+    }
+}
+impl RngJumpAhead for MWC64 {
+    fn jumpahead<N>(&mut self, n: N)
+        where N: Unsigned + PrimInt
+    {
+        self.mwc = maths::mul_mod(maths::pow_mod(MWC64::M, n, MWC64::MOD), self.mwc, MWC64::MOD);
     }
 }
 
