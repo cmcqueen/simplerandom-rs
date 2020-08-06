@@ -1,9 +1,14 @@
 
 use rand_core::{RngCore, Error, impls};
-use num_traits::{PrimInt, WrappingAdd, WrappingMul};
+use num_traits::{PrimInt, Unsigned, WrappingAdd, WrappingMul};
 use std::ops::SubAssign;
 
 pub mod maths;
+
+pub trait RngJumpAhead {
+    fn jumpahead<N>(&mut self, n: N) -> u32
+        where N: PrimInt + Unsigned;
+}
 
 
 /* Cong ----------------------------------------------------------------------*/
@@ -14,6 +19,9 @@ pub struct Cong {
 }
 
 impl Cong {
+    const M: u32 = 69069;
+    const C: u32 = 12345;
+
     pub fn new(seed1: u32) -> Cong {
         Cong {
             cong: seed1,
@@ -22,8 +30,9 @@ impl Cong {
 }
 
 impl RngCore for Cong {
+
     fn next_u32(&mut self) -> u32 {
-        self.cong = self.cong.wrapping_mul(69069).wrapping_add(12345);
+        self.cong = self.cong.wrapping_mul(Cong::M).wrapping_add(Cong::C);
         self.cong
     }
     fn next_u64(&mut self) -> u64 {
@@ -37,6 +46,17 @@ impl RngCore for Cong {
     }
 }
 
+impl RngJumpAhead for Cong {
+    fn jumpahead<N>(&mut self, n: N) -> u32
+        where N: Unsigned + PrimInt
+    {
+        let mult_exp = maths::pow(Cong::M, n);
+        let add_const = maths::geom_series(Cong::M, n).wrapping_mul(Cong::C);
+        let cong = mult_exp.wrapping_mul(self.cong).wrapping_add(add_const);
+        self.cong = cong;
+        cong
+    }
+}
 
 /* SHR3 ----------------------------------------------------------------------*/
 
@@ -62,12 +82,12 @@ impl RngCore for SHR3 {
     fn next_u32(&mut self) -> u32 {
         self.sanitise();
         let mut shr3 = self.shr3;
-    
+
         shr3 ^= shr3 << 13;
         shr3 ^= shr3 >> 17;
         shr3 ^= shr3 << 5;
         self.shr3 = shr3;
-        
+
         shr3
     }
     fn next_u64(&mut self) -> u64 {
@@ -91,7 +111,7 @@ pub struct MWC2 {
 }
 
 fn mwc_next<T>(x: T, multiplier: T) -> T
-    where T: PrimInt + WrappingAdd + WrappingMul
+    where T: PrimInt + Unsigned + WrappingAdd + WrappingMul
 {
     let width_bits = T::zero().count_zeros() as usize;
     let half_width_bits = width_bits / 2;
@@ -100,7 +120,7 @@ fn mwc_next<T>(x: T, multiplier: T) -> T
 }
 
 fn mwc_sanitise<T>(x: T, limit: T) -> T
-    where T: PrimInt + SubAssign
+    where T: PrimInt + Unsigned + SubAssign
 {
     let mut temp = x;
     if temp >= limit {
