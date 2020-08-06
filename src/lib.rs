@@ -212,6 +212,13 @@ impl RngCore for MWC1 {
         Ok(self.fill_bytes(dest))
     }
 }
+impl RngJumpAhead for MWC1 {
+    fn jumpahead<N>(&mut self, n: N)
+        where N: Unsigned + PrimInt
+    {
+        self.mwc.jumpahead(n);
+    }
+}
 
 
 /* KISS ----------------------------------------------------------------------*/
