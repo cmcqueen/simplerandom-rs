@@ -6,7 +6,7 @@ use std::ops::SubAssign;
 pub mod maths;
 
 pub trait RngJumpAhead {
-    fn jumpahead<N>(&mut self, n: N) -> u32
+    fn jumpahead<N>(&mut self, n: N)
         where N: PrimInt + Unsigned;
 }
 
@@ -47,14 +47,13 @@ impl RngCore for Cong {
 }
 
 impl RngJumpAhead for Cong {
-    fn jumpahead<N>(&mut self, n: N) -> u32
+    fn jumpahead<N>(&mut self, n: N)
         where N: Unsigned + PrimInt
     {
         let mult_exp = maths::pow(Cong::M, n);
         let add_const = maths::geom_series(Cong::M, n).wrapping_mul(Cong::C);
         let cong = mult_exp.wrapping_mul(self.cong).wrapping_add(add_const);
         self.cong = cong;
-        cong
     }
 }
 
@@ -136,6 +135,11 @@ fn mwc_sanitise<T>(x: T, limit: T) -> T
 }
 
 impl MWC2 {
+    const UPPER_M: u32 = 36969;
+    const LOWER_M: u32 = 18000;
+    const UPPER_MOD: u32 = (MWC2::UPPER_M << 16) - 1;
+    const LOWER_MOD: u32 = (MWC2::LOWER_M << 16) - 1;
+
     pub fn new(seed1: u32, seed2: u32) -> MWC2 {
         MWC2 {
             upper: seed1,
@@ -148,11 +152,11 @@ impl MWC2 {
 }
 impl RngCore for MWC2 {
     fn next_u32(&mut self) -> u32 {
-        self.upper = mwc_sanitise(self.upper, 0x9068FFFF);
-        self.lower = mwc_sanitise(self.lower, 0x464FFFFF);
+        self.upper = mwc_sanitise(self.upper, MWC2::UPPER_MOD);
+        self.lower = mwc_sanitise(self.lower, MWC2::LOWER_MOD);
 
-        self.upper = mwc_next(self.upper, 36969);
-        self.lower = mwc_next(self.lower, 18000);
+        self.upper = mwc_next(self.upper, MWC2::UPPER_M);
+        self.lower = mwc_next(self.lower, MWC2::LOWER_M);
 
         self.current()
     }
@@ -164,6 +168,14 @@ impl RngCore for MWC2 {
     }
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
         Ok(self.fill_bytes(dest))
+    }
+}
+impl RngJumpAhead for MWC2 {
+    fn jumpahead<N>(&mut self, n: N)
+        where N: Unsigned + PrimInt
+    {
+        self.upper = maths::mul_mod(maths::pow_mod(MWC2::UPPER_M, n, MWC2::UPPER_MOD), self.upper, MWC2::UPPER_MOD);
+        self.lower = maths::mul_mod(maths::pow_mod(MWC2::LOWER_M, n, MWC2::LOWER_MOD), self.lower, MWC2::LOWER_MOD);
     }
 }
 

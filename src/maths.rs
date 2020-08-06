@@ -2,7 +2,7 @@
 use num_traits::{PrimInt, Unsigned, WrappingMul, WrappingAdd, WrappingSub, Zero, One};
 use std::ops::{AddAssign, BitAnd, MulAssign};
 
-fn mul_mod<T>(a: T, b: T, m: T) -> T
+pub fn mul_mod<T>(a: T, b: T, m: T) -> T
     where T: Unsigned + PrimInt + WrappingAdd + WrappingSub + One + Zero
 {
     let mut a_work: T = a;
