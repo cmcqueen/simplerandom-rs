@@ -4,6 +4,7 @@ use num_traits::{PrimInt, Unsigned, WrappingAdd, WrappingMul};
 use std::ops::SubAssign;
 
 pub mod maths;
+pub mod bitcolumnmatrix;
 
 pub trait RngJumpAhead {
     fn jumpahead<N>(&mut self, n: N)
@@ -97,6 +98,21 @@ impl RngCore for SHR3 {
     }
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
         Ok(self.fill_bytes(dest))
+    }
+}
+
+impl RngJumpAhead for SHR3 {
+    fn jumpahead<N>(&mut self, n: N)
+        where N: Unsigned + PrimInt
+    {
+        const SHR3_MATRIX_ARRAY: [u32; 32] = [
+            0x00000000, 0x00080000, 0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x01000000, 0x02000001,
+            0x04000002, 0x08000004, 0x10000008, 0x20000010, 0x40000020, 0x80000041, 0x00000082, 0x00000104,
+            0x00000208, 0x00000410, 0x00000820, 0x00001040, 0x00002080, 0x00004100, 0x00008200, 0x00010400,
+            0x00020800, 0x00041000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040000
+        ];
+        let shr3_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&SHR3_MATRIX_ARRAY);
+
     }
 }
 
