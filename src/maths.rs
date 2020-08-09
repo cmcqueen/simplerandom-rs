@@ -36,12 +36,10 @@ pub fn mul_mod<T>(a: T, b: T, m: T) -> T
 }
 
 /*
- * Modular exponentiation.
+ * Exponentiation with wrapping.
  *
- * Calculation of 'base' to the power of an unsigned integer 'n',
- * modulo a value 'm'.
- *
- * TODO: Complete this. This is untested work-in-progress.
+ * Calculation of 'base' to the power of an unsigned integer 'n', with the
+ * natural modulo of the unsigned integer type T (ie, with wrapping).
  */
 pub fn pow<T, N>(base: T, n: N) -> T
     where T: Unsigned + PrimInt + WrappingMul + WrappingSub + One,
@@ -69,8 +67,6 @@ pub fn pow<T, N>(base: T, n: N) -> T
  *
  * Calculation of 'base' to the power of an unsigned integer 'n',
  * modulo a value 'm'.
- *
- * TODO: Complete this. This is untested work-in-progress.
  */
 pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
     where T: Unsigned + PrimInt + WrappingAdd + WrappingSub + One,
@@ -88,7 +84,6 @@ pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
         if n_work == N::zero() {
             break;
         }
-        //temp_exp = ((temp_exp * temp_exp) % m) as T;
         temp_exp = mul_mod::<T>(temp_exp, temp_exp, m);
     }
     result
