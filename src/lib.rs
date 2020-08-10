@@ -380,6 +380,15 @@ impl RngCore for KISS2 {
         Ok(self.fill_bytes(dest))
     }
 }
+impl RngJumpAhead for KISS2 {
+    fn jumpahead<N>(&mut self, n: N)
+        where N: Unsigned + PrimInt
+    {
+        self.mwc.jumpahead(n);
+        self.cong.jumpahead(n);
+        self.shr3.jumpahead(n);
+    }
+}
 
 
 /* LFSR ----------------------------------------------------------------------*/
