@@ -475,6 +475,45 @@ impl RngCore for LFSR88 {
         Ok(self.fill_bytes(dest))
     }
 }
+impl RngJumpAhead for LFSR88 {
+    fn jumpahead<N>(&mut self, n: N)
+        where N: Unsigned + PrimInt
+    {
+        const LFSR88_Z1_MATRIX_ARRAY: [u32; 32] = [
+            0x00000000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040001, 0x00080002,
+            0x00100004, 0x00200008, 0x00400010, 0x00800020, 0x01000040, 0x02000080, 0x04000100, 0x08000200,
+            0x10000400, 0x20000800, 0x40001000, 0x80000001, 0x00000002, 0x00000004, 0x00000008, 0x00000010,
+            0x00000020, 0x00000040, 0x00000080, 0x00000100, 0x00000200, 0x00000400, 0x00000800, 0x00001000
+        ];
+        const LFSR88_Z2_MATRIX_ARRAY: [u32; 32] = [
+            0x00000000, 0x00000000, 0x00000000, 0x00000080, 0x00000100, 0x00000200, 0x00000400, 0x00000800,
+            0x00001000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040000, 0x00080000,
+            0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x01000000, 0x02000000, 0x04000000, 0x08000001,
+            0x10000002, 0x20000005, 0x4000000A, 0x80000014, 0x00000028, 0x00000050, 0x00000020, 0x00000040
+        ];
+        const LFSR88_Z3_MATRIX_ARRAY: [u32; 32] = [
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200000, 0x00400000, 0x00800000, 0x01000000,
+            0x02000001, 0x04000002, 0x08000004, 0x10000009, 0x20000012, 0x40000024, 0x80000048, 0x00000090,
+            0x00000120, 0x00000240, 0x00000480, 0x00000900, 0x00001200, 0x00002400, 0x00004800, 0x00009000,
+            0x00012000, 0x00024000, 0x00048000, 0x00090000, 0x00120000, 0x00040000, 0x00080000, 0x00100000
+        ];
+
+        self.sanitise_z1();
+        let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z1_MATRIX_ARRAY);
+        let lfsr88_mult = lfsr88_matrix.pow(n);
+        self.z1 = lfsr88_mult.dot_vec(self.z1);
+
+        self.sanitise_z2();
+        let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z2_MATRIX_ARRAY);
+        let lfsr88_mult = lfsr88_matrix.pow(n);
+        self.z2 = lfsr88_mult.dot_vec(self.z2);
+
+        self.sanitise_z3();
+        let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z3_MATRIX_ARRAY);
+        let lfsr88_mult = lfsr88_matrix.pow(n);
+        self.z3 = lfsr88_mult.dot_vec(self.z3);
+    }
+}
 
 
 /* LFSR113 -------------------------------------------------------------------*/
