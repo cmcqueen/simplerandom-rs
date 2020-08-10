@@ -111,6 +111,7 @@ impl RngJumpAhead for SHR3 {
             0x20231000, 0x40462021, 0x808C4042, 0x01080084, 0x02100108, 0x04200210, 0x08400420, 0x10800840,
             0x21001080, 0x42002100, 0x84004200, 0x08008400, 0x10010800, 0x20021000, 0x40042000, 0x80084000,
         ];
+        self.sanitise();
         let shr3_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&SHR3_MATRIX_ARRAY);
         let shr3_mult = shr3_matrix.pow(n);
         self.shr3 = shr3_mult.dot_vec(self.shr3);
@@ -163,15 +164,17 @@ impl MWC2 {
             lower: seed2,
         }
     }
+    fn sanitise(&mut self) {
+        self.upper = mwc_sanitise(self.upper, MWC2::UPPER_MOD);
+        self.lower = mwc_sanitise(self.lower, MWC2::LOWER_MOD);
+    }
     fn current(&self) -> u32 {
         self.lower.wrapping_add(self.upper << 16).wrapping_add(self.upper >> 16)
     }
 }
 impl RngCore for MWC2 {
     fn next_u32(&mut self) -> u32 {
-        self.upper = mwc_sanitise(self.upper, MWC2::UPPER_MOD);
-        self.lower = mwc_sanitise(self.lower, MWC2::LOWER_MOD);
-
+        self.sanitise();
         self.upper = mwc_next(self.upper, MWC2::UPPER_M);
         self.lower = mwc_next(self.lower, MWC2::LOWER_M);
 
@@ -191,6 +194,7 @@ impl RngJumpAhead for MWC2 {
     fn jumpahead<N>(&mut self, n: N)
         where N: Unsigned + PrimInt
     {
+        self.sanitise();
         self.upper = maths::mul_mod(maths::pow_mod(MWC2::UPPER_M, n, MWC2::UPPER_MOD), self.upper, MWC2::UPPER_MOD);
         self.lower = maths::mul_mod(maths::pow_mod(MWC2::LOWER_M, n, MWC2::LOWER_MOD), self.lower, MWC2::LOWER_MOD);
     }
@@ -336,6 +340,7 @@ impl RngJumpAhead for MWC64 {
     fn jumpahead<N>(&mut self, n: N)
         where N: Unsigned + PrimInt
     {
+        self.sanitise();
         self.mwc = maths::mul_mod(maths::pow_mod(MWC64::M, n, MWC64::MOD), self.mwc, MWC64::MOD);
     }
 }
