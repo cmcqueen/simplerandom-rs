@@ -51,8 +51,8 @@ impl RngJumpAhead for Cong {
     fn jumpahead<N>(&mut self, n: N)
         where N: Unsigned + PrimInt
     {
-        let mult_exp = maths::pow(Cong::M, n);
-        let add_const = maths::geom_series(Cong::M, n).wrapping_mul(Cong::C);
+        let mult_exp = maths::wrapping_pow(Cong::M, n);
+        let add_const = maths::wrapping_geom_series(Cong::M, n).wrapping_mul(Cong::C);
         let cong = mult_exp.wrapping_mul(self.cong).wrapping_add(add_const);
         self.cong = cong;
     }

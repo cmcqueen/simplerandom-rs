@@ -41,7 +41,7 @@ pub fn mul_mod<T>(a: T, b: T, m: T) -> T
  * Calculation of 'base' to the power of an unsigned integer 'n', with the
  * natural modulo of the unsigned integer type T (ie, with wrapping).
  */
-pub fn pow<T, N>(base: T, n: N) -> T
+pub fn wrapping_pow<T, N>(base: T, n: N) -> T
     where T: Unsigned + PrimInt + WrappingMul + WrappingSub + One,
           N: Unsigned + PrimInt + BitAnd + One + Zero,
 {
@@ -103,7 +103,7 @@ pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
  * This implementation is by a loop, not recursion, with time order
  * O(log n) and stack depth O(1).
  */
-pub fn geom_series<T, N>(r: T, n: N) -> T
+pub fn wrapping_geom_series<T, N>(r: T, n: N) -> T
     where T: Unsigned + PrimInt + WrappingMul + WrappingAdd + WrappingSub + AddAssign + MulAssign + One,
           N: Unsigned + PrimInt + BitAnd + One + Zero,
 {
@@ -118,7 +118,7 @@ pub fn geom_series<T, N>(r: T, n: N) -> T
     let mut n_work = n;
     while n_work > N::one() {
         if n_work & N::one() != N::zero() {
-            result = pow(temp_r, n_work - N::one()).wrapping_mul(&mult).wrapping_add(&result);
+            result = wrapping_pow(temp_r, n_work - N::one()).wrapping_mul(&mult).wrapping_add(&result);
         }
         mult = (T::one().wrapping_add(&temp_r)).wrapping_mul(&mult);
         temp_r = temp_r.wrapping_mul(&temp_r);

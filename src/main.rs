@@ -27,9 +27,9 @@ fn test_new_and_next_u32() {
 }
 
 fn test_maths() {
-    println!("pow {}", simplerandom::maths::pow(123456789_u32, 123456789_u32));
+    println!("wrapping_pow {}", simplerandom::maths::wrapping_pow(123456789_u32, 123456789_u32));
     println!("pow_mod {}", simplerandom::maths::pow_mod(123456789_u32, 123456789_u32, 99887766_u32));
-    println!("geom_series {}", simplerandom::maths::geom_series(12345_u32, 12345_u32));
+    println!("wrapping_geom_series {}", simplerandom::maths::wrapping_geom_series(12345_u32, 12345_u32));
 }
 
 fn main() {
