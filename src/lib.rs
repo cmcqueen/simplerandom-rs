@@ -22,6 +22,7 @@ pub struct Cong {
 impl Cong {
     const M: u32 = 69069;
     const C: u32 = 12345;
+    const CYCLE_LEN: u64 = 1 << 32;
 
     pub fn new(seed1: u32) -> Cong {
         Cong {
@@ -51,7 +52,7 @@ impl RngJumpAhead for Cong {
     fn jumpahead<N>(&mut self, n: N)
         where N: maths::IntTypes
     {
-        let n_mod = maths::wrapping_to_unsigned(n);
+        let n_mod = maths::modulo(n, Cong::CYCLE_LEN);
         let mult_exp = maths::wrapping_pow(Cong::M, n_mod);
         let add_const = maths::wrapping_geom_series(Cong::M, n_mod).wrapping_mul(Cong::C);
         let cong = mult_exp.wrapping_mul(self.cong).wrapping_add(add_const);
