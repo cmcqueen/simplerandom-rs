@@ -1,6 +1,118 @@
 
-use num_traits::{PrimInt, Unsigned, WrappingMul, WrappingAdd, WrappingSub, Zero, One};
+use num_traits::{PrimInt, Signed, Unsigned, WrappingMul, WrappingAdd, WrappingSub, WrappingNeg, Zero, One, NumCast};
 use std::ops::{AddAssign, BitAnd, MulAssign};
+
+pub trait IntTypes: PrimInt + NumCast + WrappingAdd + WrappingNeg + Copy
+{
+    type SignedType: PrimInt + Signed + Zero + One + Copy + NumCast;
+    type UnsignedType: PrimInt + Unsigned + Zero + One + Copy + NumCast + WrappingNeg;
+    type OtherSignType: PrimInt + Zero + One + Copy + NumCast;
+}
+impl IntTypes for i8 {
+    type SignedType = i8;
+    type UnsignedType = u8;
+    type OtherSignType = u8;
+}
+impl IntTypes for i16 {
+    type SignedType = i16;
+    type UnsignedType = u16;
+    type OtherSignType = u16;
+}
+impl IntTypes for i32 {
+    type SignedType = i32;
+    type UnsignedType = u32;
+    type OtherSignType = u32;
+}
+impl IntTypes for i64 {
+    type SignedType = i64;
+    type UnsignedType = u64;
+    type OtherSignType = u64;
+}
+impl IntTypes for u8 {
+    type SignedType = i8;
+    type UnsignedType = u8;
+    type OtherSignType = i8;
+}
+impl IntTypes for u16 {
+    type SignedType = i16;
+    type UnsignedType = u16;
+    type OtherSignType = i16;
+}
+impl IntTypes for u32 {
+    type SignedType = i32;
+    type UnsignedType = u32;
+    type OtherSignType = i32;
+}
+impl IntTypes for u64 {
+    type SignedType = i64;
+    type UnsignedType = u64;
+    type OtherSignType = i64;
+}
+
+pub fn abs_as_unsigned<T>(a: T) -> T::UnsignedType
+    where T: IntTypes
+{
+    if a < T::zero() {
+        // Negative input. Negate it.
+        let result: Option<T::UnsignedType> = NumCast::from(a.wrapping_neg());
+        if result.is_some() {
+            // Normal case.
+            result.unwrap_or(T::UnsignedType::zero())
+        } else {
+            // The exceptional case: the lowest negative number,
+            let result_minus_1: Option<T::UnsignedType> = NumCast::from((a + T::one()).wrapping_neg());
+            result_minus_1.unwrap_or(T::UnsignedType::zero()) + T::UnsignedType::one()
+        }
+    } else {
+        let result: Option<T::UnsignedType> = NumCast::from(a);
+        result.unwrap_or(T::UnsignedType::zero())
+    }
+}
+
+pub fn wrapping_to_unsigned<T>(a: T) -> T::UnsignedType
+    where T: IntTypes
+{
+    if a < T::zero() {
+        abs_as_unsigned(a).wrapping_neg()
+    } else {
+        abs_as_unsigned(a)
+    }
+}
+
+pub fn modulo<A, M>(a: A, m: M) -> M
+    where A: IntTypes,
+        M: PrimInt + Unsigned + Zero + Copy + NumCast
+{
+    if a >= A::zero() {
+        // Unsigned input.
+        let a_opt: Option<M> = NumCast::from(a);
+        if a_opt.is_some() {
+            // a fits into type M. Easy.
+            a_opt.unwrap() % m
+        } else {
+            // a doesn't fit into type M. m should fit into type A.
+            let m_opt: Option<A> = NumCast::from(m);
+            let result_a = a % m_opt.unwrap();
+            let result_m: Option<M> = NumCast::from(result_a);
+            result_m.unwrap()
+        }
+    } else {
+        // Signed input.
+        let a_abs = abs_as_unsigned(a);
+        let a_abs_opt: Option<M> = NumCast::from(a_abs);
+        if a_abs_opt.is_some() {
+            // a_abs fits into type M.
+            m - (a_abs_opt.unwrap() % m)
+        } else {
+            // a_abs doesn't fit into type M. m should fit into the corresponding unsigned type of A.
+            let m_opt: Option<A::UnsignedType> = NumCast::from(m);
+            let m_s = m_opt.unwrap();
+            let result_a = m_s - (a_abs % m_s);
+            let result_m: Option<M> = NumCast::from(result_a);
+            result_m.unwrap()
+        }
+    }
+}
 
 pub fn mul_mod<T>(a: T, b: T, m: T) -> T
     where T: Unsigned + PrimInt + WrappingAdd + WrappingSub + One + Zero

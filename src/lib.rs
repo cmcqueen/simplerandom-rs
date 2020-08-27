@@ -8,7 +8,7 @@ pub mod bitcolumnmatrix;
 
 pub trait RngJumpAhead {
     fn jumpahead<N>(&mut self, n: N)
-        where N: PrimInt + Unsigned;
+        where N: maths::IntTypes;
 }
 
 
@@ -49,10 +49,11 @@ impl RngCore for Cong {
 
 impl RngJumpAhead for Cong {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
-        let mult_exp = maths::wrapping_pow(Cong::M, n);
-        let add_const = maths::wrapping_geom_series(Cong::M, n).wrapping_mul(Cong::C);
+        let n_mod = maths::wrapping_to_unsigned(n);
+        let mult_exp = maths::wrapping_pow(Cong::M, n_mod);
+        let add_const = maths::wrapping_geom_series(Cong::M, n_mod).wrapping_mul(Cong::C);
         let cong = mult_exp.wrapping_mul(self.cong).wrapping_add(add_const);
         self.cong = cong;
     }
@@ -66,6 +67,8 @@ pub struct SHR3 {
 }
 
 impl SHR3 {
+    const CYCLE_LEN: u32 = 0xFFFFFFFF;
+
     pub fn new(seed1: u32) -> SHR3 {
         SHR3 {
             shr3: seed1,
@@ -103,7 +106,7 @@ impl RngCore for SHR3 {
 
 impl RngJumpAhead for SHR3 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
         const SHR3_MATRIX_ARRAY: [u32; 32] = [
             0x00042021, 0x00084042, 0x00108084, 0x00210108, 0x00420231, 0x00840462, 0x010808C4, 0x02101188,
@@ -111,9 +114,10 @@ impl RngJumpAhead for SHR3 {
             0x20231000, 0x40462021, 0x808C4042, 0x01080084, 0x02100108, 0x04200210, 0x08400420, 0x10800840,
             0x21001080, 0x42002100, 0x84004200, 0x08008400, 0x10010800, 0x20021000, 0x40042000, 0x80084000,
         ];
+        let n_mod = maths::modulo(n, SHR3::CYCLE_LEN);
         self.sanitise();
         let shr3_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&SHR3_MATRIX_ARRAY);
-        let shr3_mult = shr3_matrix.pow(n);
+        let shr3_mult = shr3_matrix.pow(n_mod);
         self.shr3 = shr3_mult.dot_vec(self.shr3);
     }
 }
@@ -157,6 +161,8 @@ impl MWC2 {
     const LOWER_M: u32 = 18000;
     const UPPER_MOD: u32 = (MWC2::UPPER_M << 16) - 1;
     const LOWER_MOD: u32 = (MWC2::LOWER_M << 16) - 1;
+    const UPPER_CYCLE_LEN: u32 = (MWC2::UPPER_M << 16) / 2 - 1;
+    const LOWER_CYCLE_LEN: u32 = (MWC2::LOWER_M << 16) / 2 - 1;
 
     pub fn new(seed1: u32, seed2: u32) -> MWC2 {
         MWC2 {
@@ -192,11 +198,14 @@ impl RngCore for MWC2 {
 }
 impl RngJumpAhead for MWC2 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
+        let n_upper = maths::modulo(n, MWC2::UPPER_CYCLE_LEN);
+        let n_lower = maths::modulo(n, MWC2::LOWER_CYCLE_LEN);
+
         self.sanitise();
-        self.upper = maths::mul_mod(maths::pow_mod(MWC2::UPPER_M, n, MWC2::UPPER_MOD), self.upper, MWC2::UPPER_MOD);
-        self.lower = maths::mul_mod(maths::pow_mod(MWC2::LOWER_M, n, MWC2::LOWER_MOD), self.lower, MWC2::LOWER_MOD);
+        self.upper = maths::mul_mod(maths::pow_mod(MWC2::UPPER_M, n_upper, MWC2::UPPER_MOD), self.upper, MWC2::UPPER_MOD);
+        self.lower = maths::mul_mod(maths::pow_mod(MWC2::LOWER_M, n_lower, MWC2::LOWER_MOD), self.lower, MWC2::LOWER_MOD);
     }
 }
 
@@ -235,7 +244,7 @@ impl RngCore for MWC1 {
 }
 impl RngJumpAhead for MWC1 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
         self.mwc.jumpahead(n);
     }
@@ -283,7 +292,7 @@ impl RngCore for KISS {
 }
 impl RngJumpAhead for KISS {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
         self.mwc.jumpahead(n);
         self.cong.jumpahead(n);
@@ -302,6 +311,7 @@ pub struct MWC64 {
 impl MWC64 {
     const M: u64 = 698769069;
     const MOD: u64 = (MWC64::M << 32) - 1;
+    const CYCLE_LEN: u64 = (MWC64::M << 32) / 2 - 1;
 
     pub fn new(seed1: u32, seed2: u32) -> MWC64 {
         MWC64 {
@@ -338,10 +348,11 @@ impl RngCore for MWC64 {
 }
 impl RngJumpAhead for MWC64 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
+        let n_mod = maths::modulo(n, MWC64::CYCLE_LEN);
         self.sanitise();
-        self.mwc = maths::mul_mod(maths::pow_mod(MWC64::M, n, MWC64::MOD), self.mwc, MWC64::MOD);
+        self.mwc = maths::mul_mod(maths::pow_mod(MWC64::M, n_mod, MWC64::MOD), self.mwc, MWC64::MOD);
     }
 }
 
@@ -387,7 +398,7 @@ impl RngCore for KISS2 {
 }
 impl RngJumpAhead for KISS2 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
         self.mwc.jumpahead(n);
         self.cong.jumpahead(n);
@@ -429,6 +440,9 @@ impl LFSR88 {
     const Z1_MIN: u32 = 2;
     const Z2_MIN: u32 = 8;
     const Z3_MIN: u32 = 16;
+    const Z1_CYCLE_LEN: u32 = (1 << (32 - 1)) - 1;
+    const Z2_CYCLE_LEN: u32 = (1 << (32 - 3)) - 1;
+    const Z3_CYCLE_LEN: u32 = (1 << (32 - 4)) - 1;
 
     pub fn new(seed1: u32, seed2: u32, seed3: u32) -> LFSR88 {
         LFSR88 {
@@ -482,7 +496,7 @@ impl RngCore for LFSR88 {
 }
 impl RngJumpAhead for LFSR88 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
         const LFSR88_Z1_MATRIX_ARRAY: [u32; 32] = [
             0x00000000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040001, 0x00080002,
@@ -503,19 +517,22 @@ impl RngJumpAhead for LFSR88 {
             0x00012000, 0x00024000, 0x00048000, 0x00090000, 0x00120000, 0x00040000, 0x00080000, 0x00100000
         ];
 
+        let n_z1 = maths::modulo(n, LFSR88::Z1_CYCLE_LEN);
         self.sanitise_z1();
         let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z1_MATRIX_ARRAY);
-        let lfsr88_mult = lfsr88_matrix.pow(n);
+        let lfsr88_mult = lfsr88_matrix.pow(n_z1);
         self.z1 = lfsr88_mult.dot_vec(self.z1);
 
+        let n_z2 = maths::modulo(n, LFSR88::Z2_CYCLE_LEN);
         self.sanitise_z2();
         let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z2_MATRIX_ARRAY);
-        let lfsr88_mult = lfsr88_matrix.pow(n);
+        let lfsr88_mult = lfsr88_matrix.pow(n_z2);
         self.z2 = lfsr88_mult.dot_vec(self.z2);
 
+        let n_z3 = maths::modulo(n, LFSR88::Z3_CYCLE_LEN);
         self.sanitise_z3();
         let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z3_MATRIX_ARRAY);
-        let lfsr88_mult = lfsr88_matrix.pow(n);
+        let lfsr88_mult = lfsr88_matrix.pow(n_z3);
         self.z3 = lfsr88_mult.dot_vec(self.z3);
     }
 }
@@ -536,6 +553,10 @@ impl LFSR113 {
     const Z2_MIN: u32 = 8;
     const Z3_MIN: u32 = 16;
     const Z4_MIN: u32 = 128;
+    const Z1_CYCLE_LEN: u32 = (1 << (32 - 1)) - 1;
+    const Z2_CYCLE_LEN: u32 = (1 << (32 - 3)) - 1;
+    const Z3_CYCLE_LEN: u32 = (1 << (32 - 4)) - 1;
+    const Z4_CYCLE_LEN: u32 = (1 << (32 - 7)) - 1;
 
     pub fn new(seed1: u32, seed2: u32, seed3: u32, seed4: u32) -> LFSR113 {
         LFSR113 {
@@ -598,7 +619,7 @@ impl RngCore for LFSR113 {
 }
 impl RngJumpAhead for LFSR113 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: Unsigned + PrimInt
+        where N: maths::IntTypes
     {
         const LFSR113_Z1_MATRIX_ARRAY: [u32; 32] = [
             0x00000000, 0x00080000, 0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x01000000, 0x02000001,
@@ -625,24 +646,28 @@ impl RngJumpAhead for LFSR113 {
             0x00009000, 0x00012000, 0x00024000, 0x00048000, 0x00090000, 0x00020000, 0x00040000, 0x00080000
         ];
 
+        let n_z1 = maths::modulo(n, LFSR113::Z1_CYCLE_LEN);
         self.sanitise_z1();
         let lfsr113_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR113_Z1_MATRIX_ARRAY);
-        let lfsr113_mult = lfsr113_matrix.pow(n);
+        let lfsr113_mult = lfsr113_matrix.pow(n_z1);
         self.z1 = lfsr113_mult.dot_vec(self.z1);
 
+        let n_z2 = maths::modulo(n, LFSR113::Z2_CYCLE_LEN);
         self.sanitise_z2();
         let lfsr113_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR113_Z2_MATRIX_ARRAY);
-        let lfsr113_mult = lfsr113_matrix.pow(n);
+        let lfsr113_mult = lfsr113_matrix.pow(n_z2);
         self.z2 = lfsr113_mult.dot_vec(self.z2);
 
+        let n_z3 = maths::modulo(n, LFSR113::Z3_CYCLE_LEN);
         self.sanitise_z3();
         let lfsr113_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR113_Z3_MATRIX_ARRAY);
-        let lfsr113_mult = lfsr113_matrix.pow(n);
+        let lfsr113_mult = lfsr113_matrix.pow(n_z3);
         self.z3 = lfsr113_mult.dot_vec(self.z3);
 
+        let n_z4 = maths::modulo(n, LFSR113::Z4_CYCLE_LEN);
         self.sanitise_z4();
         let lfsr113_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR113_Z4_MATRIX_ARRAY);
-        let lfsr113_mult = lfsr113_matrix.pow(n);
+        let lfsr113_mult = lfsr113_matrix.pow(n_z4);
         self.z4 = lfsr113_mult.dot_vec(self.z4);
     }
 }
