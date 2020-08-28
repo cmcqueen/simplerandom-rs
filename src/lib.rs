@@ -30,9 +30,7 @@ impl Cong {
         }
     }
 }
-
 impl RngCore for Cong {
-
     fn next_u32(&mut self) -> u32 {
         self.cong = self.cong.wrapping_mul(Cong::M).wrapping_add(Cong::C);
         self.cong
@@ -47,7 +45,6 @@ impl RngCore for Cong {
         Ok(self.fill_bytes(dest))
     }
 }
-
 impl RngJumpAhead for Cong {
     fn jumpahead<N>(&mut self, n: N)
         where N: maths::IntTypes
@@ -59,6 +56,7 @@ impl RngJumpAhead for Cong {
         self.cong = cong;
     }
 }
+
 
 /* SHR3 ----------------------------------------------------------------------*/
 
@@ -81,7 +79,6 @@ impl SHR3 {
         }
     }
 }
-
 impl RngCore for SHR3 {
     fn next_u32(&mut self) -> u32 {
         self.sanitise();
@@ -104,7 +101,6 @@ impl RngCore for SHR3 {
         Ok(self.fill_bytes(dest))
     }
 }
-
 impl RngJumpAhead for SHR3 {
     fn jumpahead<N>(&mut self, n: N)
         where N: maths::IntTypes
@@ -427,6 +423,7 @@ fn lfsr_next_z(z: u32, a: u8, b: u8, c: u8, min_value: u32) -> u32 {
     let b = ((z << a) ^ z) >> b;
     ((z & mask) << c) ^ b
 }
+
 
 /* LFSR88 --------------------------------------------------------------------*/
 

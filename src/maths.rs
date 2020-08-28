@@ -2,11 +2,39 @@
 use num_traits::{PrimInt, Signed, Unsigned, WrappingMul, WrappingAdd, WrappingSub, WrappingNeg, Zero, One, NumCast};
 use std::ops::{AddAssign, BitAnd, MulAssign};
 
+/// Unsigned integer types
+///
 pub trait UIntTypes: PrimInt + Unsigned + WrappingAdd + WrappingSub + Zero + One + Copy
 {
+    /// Multiply unsigned `a` and `b`, modulo `m`
+    ///
+    /// It can be specialised for each integer type. See the comments on
+    /// the generic mul_mod() implementation below.
+    ///
     fn mul_mod(a: Self, b: Self, m: Self) -> Self;
 }
 
+/// Multiply unsigned `a` and `b`, modulo `m`
+///
+/// This is a generic implementation that should work for any unsigned
+/// primitive integer type.
+///
+/// Note that for most integer types for which a larger integer type is
+/// available for intermediate calculations, it may be faster to implement it
+/// by doing a simple multiplication in the larger integer type, calculating
+/// the modulo, then casting back to the result type. That can be done for
+/// u8 through u64, but not u128 and perhaps not usize. See
+/// UIntTypes::mul_mod() which can be specialised for each type.
+///
+/// # Arguments
+///
+/// Multiplicands `a` and `b` can be any unsigned primitive integer.
+/// Modulus `m` can be any unsigned primitive integer.
+///
+/// # Return
+///
+/// The result is the multiplication of `a` and `b`, modulo `m`.
+///
 pub fn mul_mod<T>(a: T, b: T, m: T) -> T
     where T: UIntTypes
 {
@@ -41,39 +69,61 @@ pub fn mul_mod<T>(a: T, b: T, m: T) -> T
 }
 
 impl UIntTypes for u8 {
+    /// Simple specialisation using the next larger integer type
     fn mul_mod(a: Self, b: Self, m: Self) -> Self {
         ((a as u16) * (b as u16) % (m as u16)) as u8
     }
 }
 impl UIntTypes for u16 {
+    /// Simple specialisation using the next larger integer type
     fn mul_mod(a: Self, b: Self, m: Self) -> Self {
         ((a as u32) * (b as u32) % (m as u32)) as u16
     }
 }
 impl UIntTypes for u32 {
+    /// Simple specialisation using the next larger integer type
     fn mul_mod(a: Self, b: Self, m: Self) -> Self {
         ((a as u64) * (b as u64) % (m as u64)) as u32
     }
 }
 impl UIntTypes for u64 {
+    /// Simple specialisation using the next larger integer type
     fn mul_mod(a: Self, b: Self, m: Self) -> Self {
         ((a as u128) * (b as u128) % (m as u128)) as u64
     }
 }
 impl UIntTypes for u128 {
+    /// Use the generic implementation
     fn mul_mod(a: Self, b: Self, m: Self) -> Self {
         mul_mod::<Self>(a, b, m)
     }
 }
 
+/// Primitive integer types
+///
+/// Mappings to associated signed and unsigned types with the same bit width.
+///
 pub trait IntTypes: PrimInt + NumCast + Zero + WrappingAdd + WrappingNeg + Copy
 {
     type SignedType: PrimInt + Signed + Zero + One + Copy + NumCast;
     type UnsignedType: PrimInt + Unsigned + Zero + One + Copy + NumCast + WrappingNeg;
     type OtherSignType: PrimInt + Zero + One + Copy + NumCast;
+
+    /// abs() function which returns a corresponding unsigned type
+    ///
+    /// For unsigned input types, just return the same value.
+    /// For signed types, return the unsigned type of the same bit width.
+    ///
     fn abs_as_unsigned(a: Self) -> Self::UnsignedType;
 }
 
+/// abs() function which returns a corresponding unsigned type
+///
+/// For unsigned input types, just return the same value.
+/// For signed types, return the unsigned type of the same bit width.
+///
+/// This is a generic implementation which should work for all primitive
+/// integers, both signed and unsigned.
 pub fn abs_as_unsigned<T>(a: T) -> T::UnsignedType
     where T: IntTypes
 {
@@ -81,14 +131,16 @@ pub fn abs_as_unsigned<T>(a: T) -> T::UnsignedType
         // Negative input. Negate it.
         let result: Option<T::UnsignedType> = NumCast::from(a.wrapping_neg());
         if result.is_some() {
-            // Normal case.
-            result.unwrap_or(T::UnsignedType::zero())
+            // The vast majority of values.
+            result.unwrap()
         } else {
-            // The exceptional case: the lowest negative number,
+            // The exceptional case: in two's complement form, the lowest
+            // negative number's negation doesn't fit into the signed type.
             let result_minus_1: Option<T::UnsignedType> = NumCast::from((a + T::one()).wrapping_neg());
             result_minus_1.unwrap_or(T::UnsignedType::zero()) + T::UnsignedType::one()
         }
     } else {
+        // Positive input. Return it as-is.
         let result: Option<T::UnsignedType> = NumCast::from(a);
         result.unwrap_or(T::UnsignedType::zero())
     }
@@ -191,6 +243,18 @@ impl IntTypes for usize {
     }
 }
 
+/// Calculate `a` modulo `m`
+///
+/// # Arguments
+///
+/// `a` can be any primitive integer, signed or unsigned.
+/// `m` can be any unsigned primitive integer.
+///
+/// # Return
+///
+/// The result is the same unsigned type as that of parameter `m`.
+/// The result is in the range [0..m] even when `a` is negative.
+///
 pub fn modulo<A, M>(a: A, m: M) -> M
     where A: IntTypes,
         M: PrimInt + Unsigned + Zero + Copy + NumCast
@@ -226,15 +290,14 @@ pub fn modulo<A, M>(a: A, m: M) -> M
     }
 }
 
-/*
- * Exponentiation with wrapping.
- *
- * Calculation of 'base' to the power of an unsigned integer 'n', with the
- * natural modulo of the unsigned integer type T (ie, with wrapping).
- */
+/// Exponentiation with wrapping
+///
+/// Calculation of `base` to the power of an unsigned integer `n`, with the
+/// natural modulo of the unsigned integer type T (ie, with wrapping).
+///
 pub fn wrapping_pow<T, N>(base: T, n: N) -> T
-    where T: Unsigned + PrimInt + WrappingMul + WrappingSub + One,
-          N: Unsigned + PrimInt + BitAnd + One + Zero,
+    where T: PrimInt + Unsigned + WrappingMul + WrappingSub + One,
+          N: PrimInt + Unsigned + BitAnd + One + Zero,
 {
     let mut result: T = T::one();
     let mut temp_exp = base;
@@ -253,15 +316,14 @@ pub fn wrapping_pow<T, N>(base: T, n: N) -> T
     result
 }
 
-/*
- * Modular exponentiation.
- *
- * Calculation of 'base' to the power of an unsigned integer 'n',
- * modulo a value 'm'.
- */
+/// Modular exponentiation
+///
+/// Calculation of `base` to the power of an unsigned integer `n`,
+/// modulo a value `m`.
+///
 pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
     where T: UIntTypes,
-          N: Unsigned + PrimInt + BitAnd + One + Zero,
+          N: PrimInt + Unsigned + BitAnd + One + Zero,
 {
     let mut result: T = T::one();
     let mut temp_exp = base;
@@ -280,23 +342,29 @@ pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
     result
 }
 
-/* Calculate geometric series:
- *     1 + r + r^2 + r^3 + ... r^(n-1)
- * summed to n terms, modulo 2^32.
- *
- * It makes use of the fact that the series can pair up terms:
- *     (1 + r) + (1 + r) r^2 + (1 + r) r^4 + ... + (1 + r) (r^2)^(n/2-1) + [ r^(n-1) if n is odd ]
- *     (1 + r) (1 + r^2 + r^4 + ... + (r^2)^(n/2-1)) + [ r^(n-1) if n is odd ]
- *
- * Which can easily be calculated by recursion, with time order O(log n), and
- * also stack depth O(log n). However that stack depth isn't good, so a
- * non-recursive implementation is preferable.
- * This implementation is by a loop, not recursion, with time order
- * O(log n) and stack depth O(1).
- */
+/// Calculate geometric series
+///
+/// That is, calculate the geometric series:
+///
+///     1 + r + r^2 + r^3 + ... r^(n-1)
+///
+/// summed to `n` terms, with the natural modulo of the unsigned integer
+/// type T (ie, with wrapping).
+///
+/// It makes use of the fact that the series can pair up terms:
+///
+///     (1 + r) + (1 + r) r^2 + (1 + r) r^4 + ... + (1 + r) (r^2)^(n/2-1) + [ r^(n-1) if n is odd ]
+///     (1 + r) (1 + r^2 + r^4 + ... + (r^2)^(n/2-1)) + [ r^(n-1) if n is odd ]
+///
+/// Which can easily be calculated by recursion, with time order `O(log n)`, and
+/// stack depth `O(log n)`. However that stack depth isn't good, so a
+/// non-recursive implementation is preferable.
+/// This implementation is by a loop, not recursion, with time order
+/// `O(log n)` and stack depth `O(1)`.
+///
 pub fn wrapping_geom_series<T, N>(r: T, n: N) -> T
-    where T: Unsigned + PrimInt + WrappingMul + WrappingAdd + WrappingSub + AddAssign + MulAssign + One,
-          N: Unsigned + PrimInt + BitAnd + One + Zero,
+    where T: PrimInt + Unsigned + WrappingMul + WrappingAdd + WrappingSub + AddAssign + MulAssign + One,
+          N: PrimInt + Unsigned + BitAnd + One + Zero,
 {
     let mut temp_r = r;
     let mut mult = T::one();
