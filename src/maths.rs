@@ -98,6 +98,12 @@ impl UIntTypes for u128 {
         mul_mod::<Self>(a, b, m)
     }
 }
+impl UIntTypes for usize {
+    /// Use the generic implementation
+    fn mul_mod(a: Self, b: Self, m: Self) -> Self {
+        mul_mod::<Self>(a, b, m)
+    }
+}
 
 /// Primitive integer types
 ///
