@@ -11,6 +11,8 @@ pub trait RngJumpAhead {
         where N: maths::IntTypes;
 }
 
+type BitColumnMatrix32 = bitcolumnmatrix::BitColumnMatrix::<u32, 32>;
+
 
 /* Cong ----------------------------------------------------------------------*/
 
@@ -113,7 +115,7 @@ impl RngJumpAhead for SHR3 {
         ];
         let n_mod = maths::modulo(n, SHR3::CYCLE_LEN);
         self.sanitise();
-        let shr3_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&SHR3_MATRIX_ARRAY);
+        let shr3_matrix = BitColumnMatrix32::new(&SHR3_MATRIX_ARRAY);
         let shr3_mult = shr3_matrix.pow(n_mod);
         self.shr3 = shr3_mult.dot_vec(self.shr3);
     }
@@ -517,19 +519,19 @@ impl RngJumpAhead for LFSR88 {
 
         let n_z1 = maths::modulo(n, LFSR88::Z1_CYCLE_LEN);
         self.sanitise_z1();
-        let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z1_MATRIX_ARRAY);
+        let lfsr88_matrix = BitColumnMatrix32::new(&LFSR88_Z1_MATRIX_ARRAY);
         let lfsr88_mult = lfsr88_matrix.pow(n_z1);
         self.z1 = lfsr88_mult.dot_vec(self.z1);
 
         let n_z2 = maths::modulo(n, LFSR88::Z2_CYCLE_LEN);
         self.sanitise_z2();
-        let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z2_MATRIX_ARRAY);
+        let lfsr88_matrix = BitColumnMatrix32::new(&LFSR88_Z2_MATRIX_ARRAY);
         let lfsr88_mult = lfsr88_matrix.pow(n_z2);
         self.z2 = lfsr88_mult.dot_vec(self.z2);
 
         let n_z3 = maths::modulo(n, LFSR88::Z3_CYCLE_LEN);
         self.sanitise_z3();
-        let lfsr88_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR88_Z3_MATRIX_ARRAY);
+        let lfsr88_matrix = BitColumnMatrix32::new(&LFSR88_Z3_MATRIX_ARRAY);
         let lfsr88_mult = lfsr88_matrix.pow(n_z3);
         self.z3 = lfsr88_mult.dot_vec(self.z3);
     }
@@ -646,25 +648,25 @@ impl RngJumpAhead for LFSR113 {
 
         let n_z1 = maths::modulo(n, LFSR113::Z1_CYCLE_LEN);
         self.sanitise_z1();
-        let lfsr113_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR113_Z1_MATRIX_ARRAY);
+        let lfsr113_matrix = BitColumnMatrix32::new(&LFSR113_Z1_MATRIX_ARRAY);
         let lfsr113_mult = lfsr113_matrix.pow(n_z1);
         self.z1 = lfsr113_mult.dot_vec(self.z1);
 
         let n_z2 = maths::modulo(n, LFSR113::Z2_CYCLE_LEN);
         self.sanitise_z2();
-        let lfsr113_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR113_Z2_MATRIX_ARRAY);
+        let lfsr113_matrix = BitColumnMatrix32::new(&LFSR113_Z2_MATRIX_ARRAY);
         let lfsr113_mult = lfsr113_matrix.pow(n_z2);
         self.z2 = lfsr113_mult.dot_vec(self.z2);
 
         let n_z3 = maths::modulo(n, LFSR113::Z3_CYCLE_LEN);
         self.sanitise_z3();
-        let lfsr113_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR113_Z3_MATRIX_ARRAY);
+        let lfsr113_matrix = BitColumnMatrix32::new(&LFSR113_Z3_MATRIX_ARRAY);
         let lfsr113_mult = lfsr113_matrix.pow(n_z3);
         self.z3 = lfsr113_mult.dot_vec(self.z3);
 
         let n_z4 = maths::modulo(n, LFSR113::Z4_CYCLE_LEN);
         self.sanitise_z4();
-        let lfsr113_matrix = bitcolumnmatrix::BitColumnMatrix32::new(&LFSR113_Z4_MATRIX_ARRAY);
+        let lfsr113_matrix = BitColumnMatrix32::new(&LFSR113_Z4_MATRIX_ARRAY);
         let lfsr113_mult = lfsr113_matrix.pow(n_z4);
         self.z4 = lfsr113_mult.dot_vec(self.z4);
     }

@@ -2,106 +2,108 @@ use num_traits::{PrimInt, Unsigned, Zero, One};
 use std::ops::{BitAnd};
 
 #[derive(Clone)]
-pub struct BitColumnMatrix32 {
-    columns: [u32; 32],
+pub struct BitColumnMatrix<T, const WIDTH: usize>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign
+{
+    columns: [T; WIDTH],
 }
 
-impl BitColumnMatrix32 {
-    const WIDTH: usize = 32;
-
-    pub fn new(init_data: &[u32; 32]) -> BitColumnMatrix32 {
-        BitColumnMatrix32 {
+impl<T, const WIDTH: usize> BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign
+{
+    pub fn new(init_data: &[T; WIDTH]) -> BitColumnMatrix::<T, WIDTH> {
+        BitColumnMatrix::<T, WIDTH> {
             columns: *init_data,
         }
     }
 
-    pub fn zero() -> BitColumnMatrix32 {
-        BitColumnMatrix32 {
-            columns: [0; 32],
+    pub fn zero() -> BitColumnMatrix::<T, WIDTH> {
+        BitColumnMatrix::<T, WIDTH> {
+            columns: [T::zero(); WIDTH],
         }
     }
 
-    pub fn unity() -> BitColumnMatrix32 {
-        let mut result = BitColumnMatrix32 {
-            columns: [0; 32],
+    pub fn unity() -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH> {
+            columns: [T::zero(); WIDTH],
         };
-        let mut value: u32 = 1;
-        for i in 0..BitColumnMatrix32::WIDTH {
+        let mut value: T = T::one();
+        for i in 0..WIDTH {
             result.columns[i] = value;
-            value <<= 1;
+            value = value << 1;
         }
         result
     }
 
-    pub fn shift(shift_value: i8) -> BitColumnMatrix32 {
-        let mut result = BitColumnMatrix32 {
-            columns: [0; 32],
+    pub fn shift(shift_value: i8) -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH> {
+            columns: [T::zero(); WIDTH],
         };
-        let mut value: u32 =
+        let mut value: T =
             if shift_value >= 0 {
-                1 << shift_value
+                T::one() << shift_value as usize
             } else {
-                0
+                T::zero()
             };
         let mut shift_temp = shift_value;
-        for i in 0..BitColumnMatrix32::WIDTH {
+        for i in 0..WIDTH {
             result.columns[i] = value;
             if shift_temp < 0 {
                 shift_temp += 1;
                 if shift_temp == 0 {
-                    value = 1;
+                    value = T::one();
                 }
             } else {
-                value <<= 1;
+                value = value << 1;
             }
         }
         result
     }
 
-    pub fn add(&self, b: &BitColumnMatrix32) -> BitColumnMatrix32 {
-        let mut result = BitColumnMatrix32 {
+    pub fn add(&self, b: &BitColumnMatrix::<T, WIDTH>) -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH> {
             columns: self.columns,
         };
-        for i in 0..BitColumnMatrix32::WIDTH {
+        for i in 0..WIDTH {
             result.columns[i] ^= b.columns[i];
         }
         result
     }
 
-    pub fn dot_vec(&self, b: u32) -> u32 {
-        let mut result: u32 = 0;
+    pub fn dot_vec(&self, b: T) -> T {
+        let mut result: T = T::zero();
         let mut b_temp = b;
-        for i in 0..BitColumnMatrix32::WIDTH {
-            if b_temp & 1 != 0 {
+        for i in 0..WIDTH {
+            if b_temp & T::one() != T::zero() {
                 result ^= self.columns[i];
             }
-            b_temp >>= 1;
+            b_temp = b_temp >> 1;
         }
         result
     }
 
-    pub fn dot(&self, b: &BitColumnMatrix32) -> BitColumnMatrix32 {
-        let mut result = BitColumnMatrix32::zero();
-        for i in 0..BitColumnMatrix32::WIDTH {
+    pub fn dot(&self, b: &BitColumnMatrix::<T, WIDTH>) -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH>::zero();
+        for i in 0..WIDTH {
             result.columns[i] = self.dot_vec(b.columns[i]);
         }
         result
     }
 
-    pub fn dot_equ(&mut self, b: &BitColumnMatrix32) {
-        let a = BitColumnMatrix32 {
+    pub fn dot_equ(&mut self, b: &BitColumnMatrix::<T, WIDTH>) {
+        let a = BitColumnMatrix::<T, WIDTH> {
             columns: self.columns,
         };
-        for i in 0..BitColumnMatrix32::WIDTH {
+        for i in 0..WIDTH {
             self.columns[i] = a.dot_vec(b.columns[i]);
         };
     }
 
-    pub fn pow<N>(&self, n: N) -> BitColumnMatrix32
+    pub fn pow<N>(&self, n: N) -> BitColumnMatrix::<T, WIDTH>
         where N: Unsigned + PrimInt + BitAnd + One + Zero
     {
-        let mut result = BitColumnMatrix32::unity();
-        let mut temp_exp = BitColumnMatrix32 {
+        let mut result = BitColumnMatrix::<T, WIDTH>::unity();
+        let mut temp_exp = BitColumnMatrix::<T, WIDTH> {
             columns: self.columns,
         };
         let mut n_work: N = n;
