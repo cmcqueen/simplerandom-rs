@@ -35,6 +35,12 @@ pub trait UIntTypes: PrimInt + Unsigned + WrappingAdd + WrappingSub + Zero + One
 ///
 /// The result is the multiplication of `a` and `b`, modulo `m`.
 ///
+///     use simplerandom::maths::mul_mod;
+///     let result = mul_mod(123456789_u32, 3111222333, 0x9068FFFF);
+///     assert_eq!(1473911797_u32, result);
+///     let result = mul_mod(12345678901234567890_u64, 10222333444555666777, 0x29A65EACFFFFFFFF);
+///     assert_eq!(1000040008665797219_u64, result);
+///
 pub fn mul_mod<T>(a: T, b: T, m: T) -> T
     where T: UIntTypes
 {
@@ -261,6 +267,12 @@ impl IntTypes for usize {
 /// The result is the same unsigned type as that of parameter `m`.
 /// The result is in the range [0..m] even when `a` is negative.
 ///
+///     use simplerandom::maths::modulo;
+///     let result = modulo(12345_u32, 7_u32);
+///     assert_eq!(result, 4_u32);
+///     let result = modulo(-12345_i32, 7_u32);
+///     assert_eq!(result, 3_u32);
+///
 pub fn modulo<A, M>(a: A, m: M) -> M
     where A: IntTypes,
         M: PrimInt + Unsigned + Zero + Copy + NumCast
@@ -301,6 +313,10 @@ pub fn modulo<A, M>(a: A, m: M) -> M
 /// Calculation of `base` to the power of an unsigned integer `n`, with the
 /// natural modulo of the unsigned integer type T (ie, with wrapping).
 ///
+///     use simplerandom::maths::wrapping_pow;
+///     let result = wrapping_pow(12345_u32, 1500000_u32);
+///     assert_eq!(result, 2764689665_u32);
+///
 pub fn wrapping_pow<T, N>(base: T, n: N) -> T
     where T: PrimInt + Unsigned + WrappingMul + WrappingSub + One,
           N: PrimInt + Unsigned + BitAnd + One + Zero,
@@ -327,6 +343,10 @@ pub fn wrapping_pow<T, N>(base: T, n: N) -> T
 /// Calculation of `base` to the power of an unsigned integer `n`,
 /// modulo a value `m`.
 ///
+///     use simplerandom::maths::pow_mod;
+///     let result = pow_mod(12345_u32, 1500000_u32, 1211400191_u32);
+///     assert_eq!(result, 348133782_u32);
+///
 pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
     where T: UIntTypes,
           N: PrimInt + Unsigned + BitAnd + One + Zero,
@@ -352,21 +372,25 @@ pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
 ///
 /// That is, calculate the geometric series:
 ///
-///     1 + r + r^2 + r^3 + ... r^(n-1)
+/// 1 + r + r^2 + r^3 + ... r^(n-1)
 ///
 /// summed to `n` terms, with the natural modulo of the unsigned integer
 /// type T (ie, with wrapping).
 ///
 /// It makes use of the fact that the series can pair up terms:
 ///
-///     (1 + r) + (1 + r) r^2 + (1 + r) r^4 + ... + (1 + r) (r^2)^(n/2-1) + [ r^(n-1) if n is odd ]
-///     (1 + r) (1 + r^2 + r^4 + ... + (r^2)^(n/2-1)) + [ r^(n-1) if n is odd ]
+/// (1 + r) + (1 + r) r^2 + (1 + r) r^4 + ... + (1 + r) (r^2)^(n/2-1) + [ r^(n-1) if n is odd ]
+/// (1 + r) (1 + r^2 + r^4 + ... + (r^2)^(n/2-1)) + [ r^(n-1) if n is odd ]
 ///
 /// Which can easily be calculated by recursion, with time order `O(log n)`, and
 /// stack depth `O(log n)`. However that stack depth isn't good, so a
 /// non-recursive implementation is preferable.
 /// This implementation is by a loop, not recursion, with time order
 /// `O(log n)` and stack depth `O(1)`.
+///
+///     use simplerandom::maths::wrapping_geom_series;
+///     let result = wrapping_geom_series(12345_u32, 1500000_u32);
+///     assert_eq!(result, 57634016_u32);
 ///
 pub fn wrapping_geom_series<T, N>(r: T, n: N) -> T
     where T: PrimInt + Unsigned + WrappingMul + WrappingAdd + WrappingSub + AddAssign + MulAssign + One,
