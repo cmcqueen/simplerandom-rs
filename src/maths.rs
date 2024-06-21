@@ -346,7 +346,10 @@ pub fn wrapping_pow<T, N>(base: T, n: N) -> T
 ///     use simplerandom::maths::pow_mod;
 ///     let result = pow_mod(12345_u32, 1500000_u32, 1211400191_u32);
 ///     assert_eq!(result, 348133782_u32);
-///
+///     let result = pow_mod(0xDC28D76FFD9338E9D868AF566191DE10_u128,
+///                           0x732E73C316878E244FDFDE4EE623CDCC_u128,
+///                           0xEC327D45470669CC56B547B6FE6888A2_u128);
+///     assert_eq!(result, 0x6AA4E49D8B90A5467A9655090EDD7940_u128);
 pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
     where T: UIntTypes,
           N: PrimInt + Unsigned + BitAnd + One + Zero,

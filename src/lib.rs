@@ -16,6 +16,32 @@ type BitColumnMatrix32 = bitcolumnmatrix::BitColumnMatrix::<u32, 32>;
 
 /* Cong ----------------------------------------------------------------------*/
 
+/// Cong -- Congruential random number generator
+///
+/// This is a congruential generator with the widely used 69069 multiplier:
+/// x[n]=69069x[n-1]+12345.
+/// It has period 2^32.
+///
+/// Marsaglia says: The leading half of its 32 bits seem to pass tests, but bits in the last half
+/// are too regular. It fails tests for which those bits play a significant role. But keep in mind
+/// that it is a rare application for which the trailing bits play a significant role. Cong is one
+/// of the most widely used generators of the last 30 years, as it was the system generator for VAX
+/// and was incorporated in several popular software packages, all seemingly without complaint.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::Cong::new(1);
+///     let r = s.next_u32();
+///     assert_eq!(r, 81414);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1328228615);
+///     let r = s.next_u32();
+///     assert_eq!(r, 3215746516);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2752347901);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1837808082);
 #[derive(Debug)]
 pub struct Cong {
     cong: u32,
@@ -62,6 +88,37 @@ impl RngJumpAhead for Cong {
 
 /* SHR3 ----------------------------------------------------------------------*/
 
+/// SHR3 -- 3-shift-register random number generator
+///
+/// Reading between the lines, I believe the SHR3 defined in Marsaglia's 1999 post actually has a
+/// typo: the shift values defined don't actually produce a period of 2^32-1, but have 64 possible
+/// cycles, some extremely short. But the swapped values from Marsaglia's 2003 post produce the
+/// full 2^32-1 period. So we use that definition of SHR3.
+///
+/// SHR3 is a 3-shift-register generator with period 2^32-1. It uses
+/// y[n]=y[n-1](I+L^13)(I+R^17)(I+L^5),
+/// with the y's viewed as binary vectors, L the 32x32 binary matrix that shifts a vector left 1,
+/// and R its transpose.
+///
+/// Marsaglia says: SHR3 seems to pass all except those related to the binary rank test, since 32
+/// successive values, as binary vectors, must be linearly independent, while 32 successive truly
+/// random 32-bit integers, viewed as binary vectors, will be linearly independent only about 29%
+/// of the time.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::SHR3::new(1);
+///     let r = s.next_u32();
+///     assert_eq!(r, 270369);
+///     let r = s.next_u32();
+///     assert_eq!(r, 67634689);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2647435461);
+///     let r = s.next_u32();
+///     assert_eq!(r, 307599695);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2377347001);
 #[derive(Debug)]
 pub struct SHR3 {
     shr3: u32,
@@ -124,6 +181,28 @@ impl RngJumpAhead for SHR3 {
 
 /* MWC2 ----------------------------------------------------------------------*/
 
+/// MWC2 -- "Multiply-with-carry" random number generator
+///
+/// Very similar to MWC1, except that it concatenates the two 16-bit MWC generators differently.
+/// The 'x' generator is rotated 16 bits instead of just shifted 16 bits.
+///
+/// This gets much better test results than MWC1 in L'Ecuyer's TestU01 test suite, so it should
+/// probably be preferred.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::MWC2::new(1, 2);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2422836384);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1907426166);
+///     let r = s.next_u32();
+///     assert_eq!(r, 3696423159);
+///     let r = s.next_u32();
+///     assert_eq!(r, 560799047);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 232957831);
 #[derive(Debug)]
 pub struct MWC2 {
     upper: u32,
@@ -211,6 +290,38 @@ impl RngJumpAhead for MWC2 {
 
 /* MWC1 ----------------------------------------------------------------------*/
 
+/// MWC1 -- "Multiply-with-carry" random number generator
+///
+/// This is the MWC as defined in Marsaglia's 1999 newsgroup post.
+///
+/// It uses two MWC generators to generate high and low 16-bit parts, which are then combined to
+/// make a 32-bit value.
+///
+/// The MWC generator concatenates two 16-bit multiply-with-carry generators:
+///
+/// x[n]=36969x[n-1]+carry,
+/// y[n]=18000y[n-1]+carry mod 2^16,
+///
+/// It has a period about 2^60.
+///
+/// This seems to pass all Marsaglia's Diehard tests. However, it fails many of L'Ecuyer's TestU01
+/// tests. The modified MWC2 generator passes many more tests in TestU01, and should probably be
+/// preferred, unless backwards compatibility is required.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::MWC1::new(1, 2);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2422836384);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1907405312);
+///     let r = s.next_u32();
+///     assert_eq!(r, 3696412319);
+///     let r = s.next_u32();
+///     assert_eq!(r, 560774291);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 232932908);
 #[derive(Debug)]
 pub struct MWC1 {
     mwc: MWC2,
@@ -252,6 +363,29 @@ impl RngJumpAhead for MWC1 {
 
 /* KISS ----------------------------------------------------------------------*/
 
+/// KISS -- "Keep It Simple Stupid" random number generator
+///
+/// It combines the MWC2, Cong, SHR3 generators. Period is about 2^123.
+///
+/// This is based on, but not identical to, Marsaglia's KISS generator as defined in his 1999
+/// newsgroup post. That generator most significantly has problems with its SHR3 component (see
+/// notes on SHR3). Since we are not keeping compatibility with the 1999 KISS generator for that
+/// reason, we take the opportunity to slightly update the MWC and Cong generators too.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::KISS::new(1, 2, 3, 4);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2424001924);
+///     let r = s.next_u32();
+///     assert_eq!(r, 107884083);
+///     let r = s.next_u32();
+///     assert_eq!(r, 623570573);
+///     let r = s.next_u32();
+///     assert_eq!(r, 538815332);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 101779707);
 #[derive(Debug)]
 pub struct KISS {
     mwc: MWC2,
@@ -302,6 +436,27 @@ impl RngJumpAhead for KISS {
 
 /* MWC64 ---------------------------------------------------------------------*/
 
+/// MWC64 -- "Multiply-with-carry" random number generator
+///
+/// This is a different MWC generator design, from the newsgroup post in 2003.
+///
+/// This uses a single MWC generator with a 64-bit calculation to generate a 32-bit value. The
+/// seeds should still be 32-bit values.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::MWC64::new(1, 2);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1397538139);
+///     let r = s.next_u32();
+///     assert_eq!(r, 3563413631);
+///     let r = s.next_u32();
+///     assert_eq!(r, 3101181111);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1402594920);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 655025777);
 #[derive(Debug)]
 pub struct MWC64 {
     mwc: u64,
@@ -358,6 +513,28 @@ impl RngJumpAhead for MWC64 {
 
 /* KISS2 ---------------------------------------------------------------------*/
 
+/// KISS2 -- "Keep It Simple Stupid" random number generator
+///
+/// It combines the MWC64, Cong, SHR3 generators. Period is about 2^123.
+///
+/// This is a slightly updated KISS generator design, from the newsgroup post in 2003. The MWC
+/// component uses a single 64-bit calculation, instead of two 32-bit calculations that are
+/// combined. The seeds should still be 32-bit values.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::KISS2::new(1, 2, 3, 4);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1398839167);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1816301020);
+///     let r = s.next_u32();
+///     assert_eq!(r, 431342393);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2488040595);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 666798061);
 #[derive(Debug)]
 pub struct KISS2 {
     mwc: MWC64,
@@ -429,6 +606,30 @@ fn lfsr_next_z(z: u32, a: u8, b: u8, c: u8, min_value: u32) -> u32 {
 
 /* LFSR88 --------------------------------------------------------------------*/
 
+/// LFSR88 -- Combined LFSR random number generator by L'Ecuyer
+///
+/// It combines 3 LFSR generators. The generators have been chosen for maximal equidistribution.
+///
+/// The period is approximately 2^88.
+///
+/// "Tables of Maximally-Equidistributed Combined Lfsr Generators"
+/// P. L'Ecuyer
+/// Mathematics of Computation, 68, 225 (1999), 261–269.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::LFSR88::new(1, 2, 3);
+///     let r = s.next_u32();
+///     assert_eq!(r, 270534496);
+///     let r = s.next_u32();
+///     assert_eq!(r, 75498003);
+///     let r = s.next_u32();
+///     assert_eq!(r, 539432965);
+///     let r = s.next_u32();
+///     assert_eq!(r, 536871567);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1799734280);
 #[derive(Debug)]
 pub struct LFSR88 {
     z1: u32,
@@ -540,6 +741,30 @@ impl RngJumpAhead for LFSR88 {
 
 /* LFSR113 -------------------------------------------------------------------*/
 
+/// LFSR113 -- Combined LFSR random number generator by L'Ecuyer
+///
+/// It combines 4 LFSR generators. The generators have been chosen for maximal equidistribution.
+///
+/// The period is approximately 2^113.
+///
+/// "Tables of Maximally-Equidistributed Combined Lfsr Generators"
+/// P. L'Ecuyer
+/// Mathematics of Computation, 68, 225 (1999), 261–269.
+///
+///     use rand_core::RngCore;
+///     use simplerandom::RngJumpAhead;
+///     let mut s = simplerandom::LFSR113::new(1, 2, 3, 4);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2173174600);
+///     let r = s.next_u32();
+///     assert_eq!(r, 3360260106);
+///     let r = s.next_u32();
+///     assert_eq!(r, 5252608);
+///     let r = s.next_u32();
+///     assert_eq!(r, 1645469841);
+///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     let r = s.next_u32();
+///     assert_eq!(r, 2384440028);
 #[derive(Debug)]
 pub struct LFSR113 {
     z1: u32,
