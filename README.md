@@ -73,45 +73,37 @@ The following pseudo-random number generators are provided:
 | `LFSR113`   | Combined LFSR (Tausworthe) random number generator by L'Ecuyer. From [[lecuyer1]](#lecuyer1) [[lecuyer3]](#lecuyer3).
 | `LFSR88`    | Combined LFSR (Tausworthe) random number generator by L'Ecuyer. From [[lecuyer2]](#lecuyer2).
 
-
-
 ## License
 
 The code is released under the MIT license. See LICENSE.txt for details.
 
 ## References
 
-<a name="mars1"></a>
-\[mars1\]  
+<a name="mars1">\[mars1\]</a>  
 [Random Numbers for C: End, at last?](http://www.cse.yorku.ca/~oz/marsaglia-rng.html)  
 George Marsaglia  
 Newsgroup post, sci.stat.math and others, Thu, 21 Jan 1999
 
-<a name="mars2"></a>
-\[mars2\]  
+<a name="mars2">\[mars2\]</a>  
 [RNGs](http://groups.google.com/group/sci.math/msg/9959175f66dd138f)  
 George Marsaglia  
 Newsgroup post, sci.math, 26 Feb 2003
 
-<a name="rose1"></a>
-\[rose1\]  
+<a name="rose1">\[rose1\]</a>  
 [KISS: A Bit Too Simple](http://eprint.iacr.org/2011/007.pdf)  
 Greg Rose  
 Qualcomm Inc.
 
-<a name="lecuyer1"></a>
-\[lecuyer1\]  
+<a name="lecuyer1">\[lecuyer1\]</a>  
 [Tables of Maximally-Equidistributed Combined LFSR Generators](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.43.3639)  
 Pierre L'Ecuyer  
 Mathematics of Computation, 68, 225 (1999), 261–269.
 
-<a name="lecuyer2"></a>
-\[lecuyer2\]  
+<a name="lecuyer2">\[lecuyer2\]</a>  
 [Maximally Equidistributed Combined Tausworthe Generators](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.43.4155)  
 P. L'Ecuyer  
 Mathematics of Computation, 65, 213 (1996), 203–213.
 
-<a name="lecuyer3"></a>
-\[lecuyer3\]  
+<a name="lecuyer3">\[lecuyer3\]</a>  
 [LFSR113 C double implementation](http://www.iro.umontreal.ca/~simardr/rng/lfsr113.c)  
 Pierre L'Ecuyer
