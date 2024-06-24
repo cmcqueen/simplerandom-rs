@@ -41,7 +41,7 @@ pub trait UIntTypes: PrimInt + Unsigned + WrappingAdd + WrappingSub + Zero + One
 ///     let result = mul_mod(12345678901234567890_u64, 10222333444555666777, 0x29A65EACFFFFFFFF);
 ///     assert_eq!(1000040008665797219_u64, result);
 ///
-pub fn mul_mod<T>(a: T, b: T, m: T) -> T
+pub fn mul_mod_generic<T>(a: T, b: T, m: T) -> T
     where T: UIntTypes
 {
     let mut a_work: T = a;
@@ -101,14 +101,20 @@ impl UIntTypes for u64 {
 impl UIntTypes for u128 {
     /// Use the generic implementation
     fn mul_mod(a: Self, b: Self, m: Self) -> Self {
-        mul_mod::<Self>(a, b, m)
+        mul_mod_generic::<Self>(a, b, m)
     }
 }
 impl UIntTypes for usize {
     /// Use the generic implementation
     fn mul_mod(a: Self, b: Self, m: Self) -> Self {
-        mul_mod::<Self>(a, b, m)
+        mul_mod_generic::<Self>(a, b, m)
     }
+}
+
+pub fn mul_mod<T>(a: T, b: T, m: T) -> T
+    where T: UIntTypes
+{
+    T::mul_mod(a, b, m)
 }
 
 /// Primitive integer types
@@ -360,13 +366,13 @@ pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
 
     loop {
         if n_work & N::one() != N::zero() {
-            result = T::mul_mod(result, temp_exp, m);
+            result = mul_mod(result, temp_exp, m);
         }
         n_work = n_work >> 1;
         if n_work == N::zero() {
             break;
         }
-        temp_exp = T::mul_mod(temp_exp, temp_exp, m);
+        temp_exp = mul_mod(temp_exp, temp_exp, m);
     }
     result
 }
