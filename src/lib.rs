@@ -134,9 +134,9 @@ type BitColumnMatrix32 = bitcolumnmatrix::BitColumnMatrix::<u32, 32>;
 ///     assert_eq!(r, 3215746516);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 2752347901);
-///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     s.jumpahead(1_000_000);
 ///     let r = s.next_u32();
-///     assert_eq!(r, 1837808082);
+///     assert_eq!(r, 2250891922);
 #[derive(Debug)]
 pub struct Cong {
     cong: u32,
@@ -211,9 +211,9 @@ impl RngJumpAhead for Cong {
 ///     assert_eq!(r, 2647435461);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 307599695);
-///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     s.jumpahead(1_000_000);
 ///     let r = s.next_u32();
-///     assert_eq!(r, 2377347001);
+///     assert_eq!(r, 1105614340);
 #[derive(Debug)]
 pub struct SHR3 {
     shr3: u32,
@@ -295,9 +295,9 @@ impl RngJumpAhead for SHR3 {
 ///     assert_eq!(r, 3696423159);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 560799047);
-///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     s.jumpahead(1_000_000_000_000_i64);
 ///     let r = s.next_u32();
-///     assert_eq!(r, 232957831);
+///     assert_eq!(r, 1656033328);
 #[derive(Debug)]
 pub struct MWC2 {
     upper: u32,
@@ -414,9 +414,9 @@ impl RngJumpAhead for MWC2 {
 ///     assert_eq!(r, 3696412319);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 560774291);
-///     s.jumpahead(1_000_000_000_000_000_000_i64);
+///     s.jumpahead(1_000_000_000_000_u64);
 ///     let r = s.next_u32();
-///     assert_eq!(r, 232932908);
+///     assert_eq!(r, 1656029560);
 #[derive(Debug)]
 pub struct MWC1 {
     mwc: MWC2,
