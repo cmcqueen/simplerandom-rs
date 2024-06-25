@@ -87,6 +87,22 @@ fn test_shift() {
 }
 
 #[test]
+fn test_bitand() {
+    let mask = 0xA5F01248_u32;
+    let mask_matrix = BitColumnMatrix32::one() & mask;
+
+    let mul_result = mask_matrix.dot_vec(0xFFFFFFFF_u32);
+    assert_eq!(mul_result, mask);
+
+    let mut x = 0x8000000_u32;
+    while x != 0 {
+        let mul_result = mask_matrix.dot_vec(x);
+        assert_eq!(mul_result, x & mask);
+        x = x >> 1;
+    }
+}
+
+#[test]
 fn test_shr3_matrix() {
     const SHR3_MATRIX_ARRAY: [u32; 32] = [
         0x00042021, 0x00084042, 0x00108084, 0x00210108, 0x00420231, 0x00840462, 0x010808C4,
@@ -128,4 +144,25 @@ fn test_pow_using_shr3() {
     let result = shr3_matrix.pow(1_000_000_000_u32);
 
     assert_eq!(result, shr3_pow_billion_matrix);
+}
+
+#[test]
+fn test_lfsr113_1_matrix() {
+    const LFSR88_Z1_MATRIX_ARRAY: [u32; 32] = [
+        0x00000000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040001,
+        0x00080002, 0x00100004, 0x00200008, 0x00400010, 0x00800020, 0x01000040, 0x02000080,
+        0x04000100, 0x08000200, 0x10000400, 0x20000800, 0x40001000, 0x80000001, 0x00000002,
+        0x00000004, 0x00000008, 0x00000010, 0x00000020, 0x00000040, 0x00000080, 0x00000100,
+        0x00000200, 0x00000400, 0x00000800, 0x00001000,
+    ];
+    let lfsr88_z1_matrix = BitColumnMatrix32::new(&LFSR88_Z1_MATRIX_ARRAY);
+
+    let lfsr88_z1_matrix_a = BitColumnMatrix32::one() + (BitColumnMatrix32::one() << 13);
+    let lfsr88_z1_matrix_b = BitColumnMatrix32::one() >> 19;
+    let lfsr88_z1_matrix_c = BitColumnMatrix32::one() & 0xFFFFFFFE;
+    let lfsr88_z1_matrix_d = BitColumnMatrix32::one() << 12;
+    let built_lfsr88_z1_matrix =
+        lfsr88_z1_matrix_d * lfsr88_z1_matrix_c + lfsr88_z1_matrix_b * lfsr88_z1_matrix_a;
+
+    assert_eq!(lfsr88_z1_matrix, built_lfsr88_z1_matrix);
 }
