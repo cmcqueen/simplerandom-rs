@@ -95,7 +95,7 @@
 //! Pierre L'Ecuyer
 
 use rand_core::{RngCore, Error, impls};
-use num_traits::{PrimInt, Unsigned, WrappingAdd, WrappingMul};
+use num_traits::{PrimInt, Unsigned, WrappingAdd, WrappingMul, Pow};
 use std::ops::SubAssign;
 
 pub mod maths;

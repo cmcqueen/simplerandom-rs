@@ -1,7 +1,7 @@
-use num_traits::{PrimInt, Unsigned, Zero, One};
-use std::ops::{BitAnd};
+use num_traits::{PrimInt, Unsigned, One, Pow, Zero};
+use std::ops::{BitAnd, Shl, Shr};
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BitColumnMatrix<T, const WIDTH: usize>
     where T: PrimInt + Unsigned + std::ops::BitXorAssign
 {
@@ -15,24 +15,6 @@ impl<T, const WIDTH: usize> BitColumnMatrix::<T, WIDTH>
         BitColumnMatrix::<T, WIDTH> {
             columns: *init_data,
         }
-    }
-
-    pub fn zero() -> BitColumnMatrix::<T, WIDTH> {
-        BitColumnMatrix::<T, WIDTH> {
-            columns: [T::zero(); WIDTH],
-        }
-    }
-
-    pub fn unity() -> BitColumnMatrix::<T, WIDTH> {
-        let mut result = BitColumnMatrix::<T, WIDTH> {
-            columns: [T::zero(); WIDTH],
-        };
-        let mut value: T = T::one();
-        for i in 0..WIDTH {
-            result.columns[i] = value;
-            value = value << 1;
-        }
-        result
     }
 
     pub fn shift(shift_value: i8) -> BitColumnMatrix::<T, WIDTH> {
@@ -56,16 +38,6 @@ impl<T, const WIDTH: usize> BitColumnMatrix::<T, WIDTH>
             } else {
                 value = value << 1;
             }
-        }
-        result
-    }
-
-    pub fn add(&self, b: &BitColumnMatrix::<T, WIDTH>) -> BitColumnMatrix::<T, WIDTH> {
-        let mut result = BitColumnMatrix::<T, WIDTH> {
-            columns: self.columns,
-        };
-        for i in 0..WIDTH {
-            result.columns[i] ^= b.columns[i];
         }
         result
     }
@@ -98,11 +70,53 @@ impl<T, const WIDTH: usize> BitColumnMatrix::<T, WIDTH>
             self.columns[i] = a.dot_vec(b.columns[i]);
         };
     }
+}
 
-    pub fn pow<N>(&self, n: N) -> BitColumnMatrix::<T, WIDTH>
-        where N: Unsigned + PrimInt + BitAnd + One + Zero
-    {
-        let mut result = BitColumnMatrix::<T, WIDTH>::unity();
+impl<T, const WIDTH: usize> Zero for BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign
+{
+
+    fn zero() -> BitColumnMatrix::<T, WIDTH> {
+        BitColumnMatrix::<T, WIDTH> {
+            columns: [T::zero(); WIDTH],
+        }
+    }
+
+    fn is_zero(&self) -> bool {
+        for i in 0..WIDTH {
+            if self.columns[i] != T::zero()
+            {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+impl<T, const WIDTH: usize> One for BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign
+{
+    fn one() -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH> {
+            columns: [T::zero(); WIDTH],
+        };
+        let mut value: T = T::one();
+        for i in 0..WIDTH {
+            result.columns[i] = value;
+            value = value << 1;
+        }
+        result
+    }
+}
+
+impl<N, T, const WIDTH: usize> Pow<N> for BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign,
+    N: Unsigned + PrimInt + BitAnd + One + Zero
+{
+    type Output = Self;
+
+    fn pow(self, n: N) -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH>::one();
         let mut temp_exp = BitColumnMatrix::<T, WIDTH> {
             columns: self.columns,
         };
@@ -120,5 +134,85 @@ impl<T, const WIDTH: usize> BitColumnMatrix::<T, WIDTH>
             temp_exp.dot_equ(&temp_exp2);
         }
         result
+    }
+}
+
+impl<T, const WIDTH: usize> Shl<usize> for BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign,
+{
+    type Output = Self;
+
+    fn shl(self, n: usize) -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH>::zero();
+        for i in 0..WIDTH {
+            result.columns[i] = self.columns[i] << n;
+        }
+        result
+    }
+}
+
+impl<T, const WIDTH: usize> Shr<usize> for BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign,
+{
+    type Output = Self;
+
+    fn shr(self, n: usize) -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH>::zero();
+        for i in 0..WIDTH {
+            result.columns[i] = self.columns[i] >> n;
+        }
+        result
+    }
+}
+
+impl<T, const WIDTH: usize> core::ops::Add for BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign
+{
+    type Output = Self;
+
+    fn add(self, b: BitColumnMatrix::<T, WIDTH>) -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH> {
+            columns: self.columns,
+        };
+        for i in 0..WIDTH {
+            result.columns[i] ^= b.columns[i];
+        }
+        result
+    }
+}
+
+impl<'a, 'b, T, const WIDTH: usize> core::ops::Add<&'b BitColumnMatrix::<T, WIDTH>> for &'a BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign
+{
+    type Output = BitColumnMatrix::<T, WIDTH>;
+
+    fn add(self, b: &'b BitColumnMatrix::<T, WIDTH>) -> BitColumnMatrix::<T, WIDTH> {
+        let mut result = BitColumnMatrix::<T, WIDTH> {
+            columns: self.columns,
+        };
+        for i in 0..WIDTH {
+            result.columns[i] ^= b.columns[i];
+        }
+        result
+    }
+}
+
+impl<T, const WIDTH: usize> core::ops::Mul for BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign
+{
+    type Output = Self;
+
+    fn mul(self, b: BitColumnMatrix::<T, WIDTH>) -> BitColumnMatrix::<T, WIDTH> {
+        self.dot(&b)
+    }
+}
+
+impl<'a, 'b, T, const WIDTH: usize> core::ops::Mul<&'b BitColumnMatrix::<T, WIDTH>> for &'a BitColumnMatrix::<T, WIDTH>
+    where T: PrimInt + Unsigned + std::ops::BitXorAssign
+{
+    type Output = BitColumnMatrix::<T, WIDTH>;
+
+    fn mul(self, b: &'b BitColumnMatrix::<T, WIDTH>) -> BitColumnMatrix::<T, WIDTH> {
+        self.dot(b)
     }
 }
