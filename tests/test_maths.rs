@@ -87,6 +87,212 @@ fn test_mul_mod() {
 }
 
 #[test]
+fn test_abs_as_unsigned_generic() {
+    // u8
+    let result = maths::abs_as_unsigned_generic(0_u8);
+    assert_eq!(result, 0_u8);
+    let result = maths::abs_as_unsigned_generic(0xFF_u8);
+    assert_eq!(result, 0xFF_u8);
+
+    // i8
+    let result = maths::abs_as_unsigned_generic(0x7F_i8);
+    assert_eq!(result, 0x7F_u8);
+    let result = maths::abs_as_unsigned_generic(0_i8);
+    assert_eq!(result, 0_u8);
+    let result = maths::abs_as_unsigned_generic(-1_i8);
+    assert_eq!(result, 1_u8);
+    let result = maths::abs_as_unsigned_generic(-0x7E_i8);
+    assert_eq!(result, 0x7E_u8);
+    let result = maths::abs_as_unsigned_generic(-0x7F_i8);
+    assert_eq!(result, 0x7F_u8);
+    let result = maths::abs_as_unsigned_generic(-0x80_i8);
+    assert_eq!(result, 0x80_u8);
+
+    // u16
+    let result = maths::abs_as_unsigned_generic(0_u16);
+    assert_eq!(result, 0_u16);
+    let result = maths::abs_as_unsigned_generic(0xFFFF_u16);
+    assert_eq!(result, 0xFFFF_u16);
+
+    // i16
+    let result = maths::abs_as_unsigned_generic(0x7FFF_i16);
+    assert_eq!(result, 0x7FFF_u16);
+    let result = maths::abs_as_unsigned_generic(0_i16);
+    assert_eq!(result, 0_u16);
+    let result = maths::abs_as_unsigned_generic(-1_i16);
+    assert_eq!(result, 1_u16);
+    let result = maths::abs_as_unsigned_generic(-0x7FFE_i16);
+    assert_eq!(result, 0x7FFE_u16);
+    let result = maths::abs_as_unsigned_generic(-0x7FFF_i16);
+    assert_eq!(result, 0x7FFF_u16);
+    let result = maths::abs_as_unsigned_generic(-0x8000_i16);
+    assert_eq!(result, 0x8000_u16);
+
+    // u32
+    let result = maths::abs_as_unsigned_generic(0_u32);
+    assert_eq!(result, 0_u32);
+    let result = maths::abs_as_unsigned_generic(0xFFFFFFFF_u32);
+    assert_eq!(result, 0xFFFFFFFF_u32);
+
+    // i32
+    let result = maths::abs_as_unsigned_generic(0x7FFFFFFF_i32);
+    assert_eq!(result, 0x7FFFFFFF_u32);
+    let result = maths::abs_as_unsigned_generic(0_i32);
+    assert_eq!(result, 0_u32);
+    let result = maths::abs_as_unsigned_generic(-1_i32);
+    assert_eq!(result, 1_u32);
+    let result = maths::abs_as_unsigned_generic(-0x7FFFFFFE_i32);
+    assert_eq!(result, 0x7FFFFFFE_u32);
+    let result = maths::abs_as_unsigned_generic(-0x7FFFFFFF_i32);
+    assert_eq!(result, 0x7FFFFFFF_u32);
+    let result = maths::abs_as_unsigned_generic(-0x80000000_i32);
+    assert_eq!(result, 0x80000000_u32);
+
+    // u64
+    let result = maths::abs_as_unsigned_generic(0_u64);
+    assert_eq!(result, 0_u64);
+    let result = maths::abs_as_unsigned_generic(0xFFFFFFFFFFFFFFFF_u64);
+    assert_eq!(result, 0xFFFFFFFFFFFFFFFF_u64);
+
+    // i64
+    let result = maths::abs_as_unsigned_generic(0x7FFFFFFFFFFFFFFF_i64);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFF_u64);
+    let result = maths::abs_as_unsigned_generic(0_i64);
+    assert_eq!(result, 0_u64);
+    let result = maths::abs_as_unsigned_generic(-1_i64);
+    assert_eq!(result, 1_u64);
+    let result = maths::abs_as_unsigned_generic(-0x7FFFFFFFFFFFFFFE_i64);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFE_u64);
+    let result = maths::abs_as_unsigned_generic(-0x7FFFFFFFFFFFFFFF_i64);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFF_u64);
+    let result = maths::abs_as_unsigned_generic(-0x8000000000000000_i64);
+    assert_eq!(result, 0x8000000000000000_u64);
+
+    // u128
+    let result = maths::abs_as_unsigned_generic(0_u128);
+    assert_eq!(result, 0_u128);
+    let result = maths::abs_as_unsigned_generic(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128);
+    assert_eq!(result, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128);
+
+    // i128
+    let result = maths::abs_as_unsigned_generic(0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_i128);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128);
+    let result = maths::abs_as_unsigned_generic(0_i128);
+    assert_eq!(result, 0_u128);
+    let result = maths::abs_as_unsigned_generic(-1_i128);
+    assert_eq!(result, 1_u128);
+    let result = maths::abs_as_unsigned_generic(-0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE_i128);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE_u128);
+    let result = maths::abs_as_unsigned_generic(-0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_i128);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128);
+    let result = maths::abs_as_unsigned_generic(-0x80000000000000000000000000000000_i128);
+    assert_eq!(result, 0x80000000000000000000000000000000_u128);
+}
+
+#[test]
+fn test_abs_as_unsigned() {
+    // u8
+    let result = maths::abs_as_unsigned(0_u8);
+    assert_eq!(result, 0_u8);
+    let result = maths::abs_as_unsigned(0xFF_u8);
+    assert_eq!(result, 0xFF_u8);
+
+    // i8
+    let result = maths::abs_as_unsigned(0x7F_i8);
+    assert_eq!(result, 0x7F_u8);
+    let result = maths::abs_as_unsigned(0_i8);
+    assert_eq!(result, 0_u8);
+    let result = maths::abs_as_unsigned(-1_i8);
+    assert_eq!(result, 1_u8);
+    let result = maths::abs_as_unsigned(-0x7E_i8);
+    assert_eq!(result, 0x7E_u8);
+    let result = maths::abs_as_unsigned(-0x7F_i8);
+    assert_eq!(result, 0x7F_u8);
+    let result = maths::abs_as_unsigned(-0x80_i8);
+    assert_eq!(result, 0x80_u8);
+
+    // u16
+    let result = maths::abs_as_unsigned(0_u16);
+    assert_eq!(result, 0_u16);
+    let result = maths::abs_as_unsigned(0xFFFF_u16);
+    assert_eq!(result, 0xFFFF_u16);
+
+    // i16
+    let result = maths::abs_as_unsigned(0x7FFF_i16);
+    assert_eq!(result, 0x7FFF_u16);
+    let result = maths::abs_as_unsigned(0_i16);
+    assert_eq!(result, 0_u16);
+    let result = maths::abs_as_unsigned(-1_i16);
+    assert_eq!(result, 1_u16);
+    let result = maths::abs_as_unsigned(-0x7FFE_i16);
+    assert_eq!(result, 0x7FFE_u16);
+    let result = maths::abs_as_unsigned(-0x7FFF_i16);
+    assert_eq!(result, 0x7FFF_u16);
+    let result = maths::abs_as_unsigned(-0x8000_i16);
+    assert_eq!(result, 0x8000_u16);
+
+    // u32
+    let result = maths::abs_as_unsigned(0_u32);
+    assert_eq!(result, 0_u32);
+    let result = maths::abs_as_unsigned(0xFFFFFFFF_u32);
+    assert_eq!(result, 0xFFFFFFFF_u32);
+
+    // i32
+    let result = maths::abs_as_unsigned(0x7FFFFFFF_i32);
+    assert_eq!(result, 0x7FFFFFFF_u32);
+    let result = maths::abs_as_unsigned(0_i32);
+    assert_eq!(result, 0_u32);
+    let result = maths::abs_as_unsigned(-1_i32);
+    assert_eq!(result, 1_u32);
+    let result = maths::abs_as_unsigned(-0x7FFFFFFE_i32);
+    assert_eq!(result, 0x7FFFFFFE_u32);
+    let result = maths::abs_as_unsigned(-0x7FFFFFFF_i32);
+    assert_eq!(result, 0x7FFFFFFF_u32);
+    let result = maths::abs_as_unsigned(-0x80000000_i32);
+    assert_eq!(result, 0x80000000_u32);
+
+    // u64
+    let result = maths::abs_as_unsigned(0_u64);
+    assert_eq!(result, 0_u64);
+    let result = maths::abs_as_unsigned(0xFFFFFFFFFFFFFFFF_u64);
+    assert_eq!(result, 0xFFFFFFFFFFFFFFFF_u64);
+
+    // i64
+    let result = maths::abs_as_unsigned(0x7FFFFFFFFFFFFFFF_i64);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFF_u64);
+    let result = maths::abs_as_unsigned(0_i64);
+    assert_eq!(result, 0_u64);
+    let result = maths::abs_as_unsigned(-1_i64);
+    assert_eq!(result, 1_u64);
+    let result = maths::abs_as_unsigned(-0x7FFFFFFFFFFFFFFE_i64);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFE_u64);
+    let result = maths::abs_as_unsigned(-0x7FFFFFFFFFFFFFFF_i64);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFF_u64);
+    let result = maths::abs_as_unsigned(-0x8000000000000000_i64);
+    assert_eq!(result, 0x8000000000000000_u64);
+
+    // u128
+    let result = maths::abs_as_unsigned(0_u128);
+    assert_eq!(result, 0_u128);
+    let result = maths::abs_as_unsigned(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128);
+    assert_eq!(result, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128);
+
+    // i128
+    let result = maths::abs_as_unsigned(0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_i128);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128);
+    let result = maths::abs_as_unsigned(0_i128);
+    assert_eq!(result, 0_u128);
+    let result = maths::abs_as_unsigned(-1_i128);
+    assert_eq!(result, 1_u128);
+    let result = maths::abs_as_unsigned(-0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE_i128);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE_u128);
+    let result = maths::abs_as_unsigned(-0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_i128);
+    assert_eq!(result, 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF_u128);
+    let result = maths::abs_as_unsigned(-0x80000000000000000000000000000000_i128);
+    assert_eq!(result, 0x80000000000000000000000000000000_u128);
+}
+
+#[test]
 fn test_modulo() {
     let result = maths::modulo(217_u8, 103_u8);
     assert_eq!(result, 11_u8);
