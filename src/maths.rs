@@ -127,7 +127,7 @@ pub trait IntTypes: PrimInt + NumCast + Zero + WrappingAdd + WrappingNeg + Copy
     type UnsignedType: PrimInt + Unsigned + Zero + One + Copy + NumCast + WrappingNeg;
     type OtherSignType: PrimInt + Zero + One + Copy + NumCast;
 
-    /// abs() function which returns a corresponding unsigned type
+    /// `abs()` function which returns a corresponding unsigned type
     ///
     /// For unsigned input types, just return the same value.
     /// For signed types, return the unsigned type of the same bit width.
@@ -135,14 +135,14 @@ pub trait IntTypes: PrimInt + NumCast + Zero + WrappingAdd + WrappingNeg + Copy
     fn abs_as_unsigned(a: Self) -> Self::UnsignedType;
 }
 
-/// abs() function which returns a corresponding unsigned type
+/// `abs()` function which returns a corresponding unsigned type
 ///
 /// For unsigned input types, just return the same value.
 /// For signed types, return the unsigned type of the same bit width.
 ///
 /// This is a generic implementation which should work for all primitive
 /// integers, both signed and unsigned.
-pub fn abs_as_unsigned<T>(a: T) -> T::UnsignedType
+pub fn abs_as_unsigned_generic<T>(a: T) -> T::UnsignedType
     where T: IntTypes
 {
     if a < T::zero() {
@@ -169,7 +169,7 @@ impl IntTypes for i8 {
     type UnsignedType = u8;
     type OtherSignType = u8;
     fn abs_as_unsigned(a: Self) -> Self::UnsignedType {
-        abs_as_unsigned::<Self>(a)
+        abs_as_unsigned_generic::<Self>(a)
     }
 }
 impl IntTypes for i16 {
@@ -177,7 +177,7 @@ impl IntTypes for i16 {
     type UnsignedType = u16;
     type OtherSignType = u16;
     fn abs_as_unsigned(a: Self) -> Self::UnsignedType {
-        abs_as_unsigned::<Self>(a)
+        abs_as_unsigned_generic::<Self>(a)
     }
 }
 impl IntTypes for i32 {
@@ -185,7 +185,7 @@ impl IntTypes for i32 {
     type UnsignedType = u32;
     type OtherSignType = u32;
     fn abs_as_unsigned(a: Self) -> Self::UnsignedType {
-        abs_as_unsigned::<Self>(a)
+        abs_as_unsigned_generic::<Self>(a)
     }
 }
 impl IntTypes for i64 {
@@ -193,7 +193,7 @@ impl IntTypes for i64 {
     type UnsignedType = u64;
     type OtherSignType = u64;
     fn abs_as_unsigned(a: Self) -> Self::UnsignedType {
-        abs_as_unsigned::<Self>(a)
+        abs_as_unsigned_generic::<Self>(a)
     }
 }
 impl IntTypes for i128 {
@@ -201,7 +201,7 @@ impl IntTypes for i128 {
     type UnsignedType = u128;
     type OtherSignType = u128;
     fn abs_as_unsigned(a: Self) -> Self::UnsignedType {
-        abs_as_unsigned::<Self>(a)
+        abs_as_unsigned_generic::<Self>(a)
     }
 }
 impl IntTypes for isize {
@@ -209,7 +209,7 @@ impl IntTypes for isize {
     type UnsignedType = usize;
     type OtherSignType = usize;
     fn abs_as_unsigned(a: Self) -> Self::UnsignedType {
-        abs_as_unsigned::<Self>(a)
+        abs_as_unsigned_generic::<Self>(a)
     }
 }
 impl IntTypes for u8 {
@@ -261,6 +261,19 @@ impl IntTypes for usize {
     }
 }
 
+/// `abs()` function which returns a corresponding unsigned type
+///
+/// For unsigned input types, just return the same value.
+/// For signed types, return the unsigned type of the same bit width.
+///
+/// This is a specialised implementation which uses the [`IntTypes`] trait funtion, and is defined
+/// differently for the signed and unsigned integers.
+pub fn abs_as_unsigned<T>(a: T) -> T::UnsignedType
+    where T: IntTypes
+{
+    IntTypes::abs_as_unsigned(a)
+}
+
 /// Calculate `a` modulo `m`
 ///
 /// # Arguments
@@ -284,7 +297,7 @@ pub fn modulo<A, M>(a: A, m: M) -> M
         M: PrimInt + Unsigned + Zero + Copy + NumCast
 {
     if a >= A::zero() {
-        // Unsigned input.
+        // Positive input.
         let a_opt: Option<M> = NumCast::from(a);
         if a_opt.is_some() {
             // a fits into type M. Easy.
@@ -297,8 +310,8 @@ pub fn modulo<A, M>(a: A, m: M) -> M
             result_m.unwrap()
         }
     } else {
-        // Signed input.
-        let a_abs = IntTypes::abs_as_unsigned(a);
+        // Negative input.
+        let a_abs = abs_as_unsigned(a);
         let a_abs_opt: Option<M> = NumCast::from(a_abs);
         if a_abs_opt.is_some() {
             // a_abs fits into type M.
