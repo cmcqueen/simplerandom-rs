@@ -1,10 +1,28 @@
-
-use num_traits::{PrimInt, Signed, Unsigned, WrappingMul, WrappingAdd, WrappingSub, WrappingNeg, Zero, One, NumCast};
+use num_traits::{
+    ConstOne, ConstZero, NumCast, PrimInt, Signed, Unsigned, WrappingAdd, WrappingMul, WrappingNeg,
+    WrappingSub,
+};
 use std::ops::{AddAssign, BitAnd, MulAssign};
+
+pub const fn size_of_bits<T>() -> usize {
+    std::mem::size_of::<T>() * 8
+}
+
+pub fn bit_width_mask<T>(bit_width: usize) -> T
+where
+    T: PrimInt + ConstOne,
+{
+    if bit_width < size_of_bits::<T>() {
+        (T::ONE << bit_width) - T::ONE
+    } else {
+        !(T::ONE)
+    }
+}
 
 /// Unsigned integer types
 ///
-pub trait UIntTypes: PrimInt + Unsigned + WrappingAdd + WrappingSub + Zero + One + Copy
+pub trait UIntTypes:
+    PrimInt + Unsigned + ConstOne + ConstZero + WrappingAdd + WrappingSub + Copy
 {
     /// Multiply unsigned `a` and `b`, modulo `m`
     ///
@@ -42,22 +60,23 @@ pub trait UIntTypes: PrimInt + Unsigned + WrappingAdd + WrappingSub + Zero + One
 ///     assert_eq!(1000040008665797219_u64, result);
 ///
 pub fn mul_mod_generic<T>(a: T, b: T, m: T) -> T
-    where T: UIntTypes
+where
+    T: UIntTypes,
 {
     let mut a_work: T = a;
     let mut b_work: T = b;
-    let mut result: T = T::zero();
+    let mut result: T = T::ZERO;
 
     if b_work >= m {
-        if m > T::max_value() / (T::one() + T::one()) {
+        if m > T::max_value() / (T::ONE + T::ONE) {
             b_work = b_work.wrapping_sub(&m);
         } else {
             b_work = b_work % m;
         }
     }
 
-    while a_work != T::zero() {
-        if a_work & T::one() != T::zero() {
+    while a_work != T::ZERO {
+        if a_work & T::ONE != T::ZERO {
             if b_work >= m - result {
                 result = result.wrapping_sub(&m);
             }
@@ -112,7 +131,8 @@ impl UIntTypes for usize {
 }
 
 pub fn mul_mod<T>(a: T, b: T, m: T) -> T
-    where T: UIntTypes
+where
+    T: UIntTypes,
 {
     T::mul_mod(a, b, m)
 }
@@ -121,11 +141,12 @@ pub fn mul_mod<T>(a: T, b: T, m: T) -> T
 ///
 /// Mappings to associated signed and unsigned types with the same bit width.
 ///
-pub trait IntTypes: PrimInt + NumCast + Zero + WrappingAdd + WrappingNeg + Copy
+pub trait IntTypes:
+    PrimInt + NumCast + ConstZero + ConstOne + WrappingAdd + WrappingNeg + Copy
 {
-    type SignedType: PrimInt + Signed + Zero + One + Copy + NumCast;
-    type UnsignedType: PrimInt + Unsigned + Zero + One + Copy + NumCast + WrappingNeg;
-    type OtherSignType: PrimInt + Zero + One + Copy + NumCast;
+    type SignedType: PrimInt + Signed + ConstZero + ConstOne + Copy + NumCast;
+    type UnsignedType: PrimInt + Unsigned + ConstZero + ConstOne + Copy + NumCast + WrappingNeg;
+    type OtherSignType: PrimInt + ConstOne + ConstZero + Copy + NumCast;
 
     /// `abs()` function which returns a corresponding unsigned type
     ///
@@ -143,9 +164,10 @@ pub trait IntTypes: PrimInt + NumCast + Zero + WrappingAdd + WrappingNeg + Copy
 /// This is a generic implementation which should work for all primitive
 /// integers, both signed and unsigned.
 pub fn abs_as_unsigned_generic<T>(a: T) -> T::UnsignedType
-    where T: IntTypes
+where
+    T: IntTypes,
 {
-    if a < T::zero() {
+    if a < T::ZERO {
         // Negative input. Negate it.
         let result: Option<T::UnsignedType> = NumCast::from(a.wrapping_neg());
         if result.is_some() {
@@ -154,13 +176,14 @@ pub fn abs_as_unsigned_generic<T>(a: T) -> T::UnsignedType
         } else {
             // The exceptional case: in two's complement form, the lowest
             // negative number's negation doesn't fit into the signed type.
-            let result_minus_1: Option<T::UnsignedType> = NumCast::from((a + T::one()).wrapping_neg());
-            result_minus_1.unwrap_or(T::UnsignedType::zero()) + T::UnsignedType::one()
+            let result_minus_1: Option<T::UnsignedType> =
+                NumCast::from((a + T::ONE).wrapping_neg());
+            result_minus_1.unwrap_or(T::UnsignedType::ZERO) + T::UnsignedType::ONE
         }
     } else {
         // Positive input. Return it as-is.
         let result: Option<T::UnsignedType> = NumCast::from(a);
-        result.unwrap_or(T::UnsignedType::zero())
+        result.unwrap_or(T::UnsignedType::ZERO)
     }
 }
 
@@ -269,7 +292,8 @@ impl IntTypes for usize {
 /// This is a specialised implementation which uses the [`IntTypes`] trait funtion, and is defined
 /// differently for the signed and unsigned integers.
 pub fn abs_as_unsigned<T>(a: T) -> T::UnsignedType
-    where T: IntTypes
+where
+    T: IntTypes,
 {
     IntTypes::abs_as_unsigned(a)
 }
@@ -293,10 +317,11 @@ pub fn abs_as_unsigned<T>(a: T) -> T::UnsignedType
 ///     assert_eq!(result, 3_u32);
 ///
 pub fn modulo<A, M>(a: A, m: M) -> M
-    where A: IntTypes,
-        M: PrimInt + Unsigned + Zero + Copy + NumCast
+where
+    A: IntTypes,
+    M: PrimInt + Unsigned + ConstZero + Copy + NumCast,
 {
-    if a >= A::zero() {
+    if a >= A::ZERO {
         // Positive input.
         let a_opt: Option<M> = NumCast::from(a);
         if a_opt.is_some() {
@@ -337,19 +362,20 @@ pub fn modulo<A, M>(a: A, m: M) -> M
 ///     assert_eq!(result, 2764689665_u32);
 ///
 pub fn wrapping_pow<T, N>(base: T, n: N) -> T
-    where T: PrimInt + Unsigned + WrappingMul + WrappingSub + One,
-          N: PrimInt + Unsigned + BitAnd + One + Zero,
+where
+    T: PrimInt + Unsigned + WrappingMul + WrappingSub + ConstOne,
+    N: PrimInt + Unsigned + ConstOne + ConstZero + BitAnd,
 {
-    let mut result: T = T::one();
+    let mut result: T = T::ONE;
     let mut temp_exp = base;
     let mut n_work: N = n;
 
     loop {
-        if n_work & N::one() != N::zero() {
+        if n_work & N::ONE != N::ZERO {
             result = result.wrapping_mul(&temp_exp);
         }
         n_work = n_work >> 1;
-        if n_work == N::zero() {
+        if n_work == N::ZERO {
             break;
         }
         temp_exp = temp_exp.wrapping_mul(&temp_exp);
@@ -370,19 +396,20 @@ pub fn wrapping_pow<T, N>(base: T, n: N) -> T
 ///                           0xEC327D45470669CC56B547B6FE6888A2_u128);
 ///     assert_eq!(result, 0x6AA4E49D8B90A5467A9655090EDD7940_u128);
 pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
-    where T: UIntTypes,
-          N: PrimInt + Unsigned + BitAnd + One + Zero,
+where
+    T: UIntTypes,
+    N: PrimInt + Unsigned + ConstOne + ConstZero + BitAnd,
 {
-    let mut result: T = T::one();
+    let mut result: T = T::ONE;
     let mut temp_exp = base;
     let mut n_work: N = n;
 
     loop {
-        if n_work & N::one() != N::zero() {
+        if n_work & N::ONE != N::ZERO {
             result = mul_mod(result, temp_exp, m);
         }
         n_work = n_work >> 1;
-        if n_work == N::zero() {
+        if n_work == N::ZERO {
             break;
         }
         temp_exp = mul_mod(temp_exp, temp_exp, m);
@@ -415,23 +442,34 @@ pub fn pow_mod<T, N>(base: T, n: N, m: T) -> T
 ///     assert_eq!(result, 57634016_u32);
 ///
 pub fn wrapping_geom_series<T, N>(r: T, n: N) -> T
-    where T: PrimInt + Unsigned + WrappingMul + WrappingAdd + WrappingSub + AddAssign + MulAssign + One,
-          N: PrimInt + Unsigned + BitAnd + One + Zero,
+where
+    T: PrimInt
+        + Unsigned
+        + ConstOne
+        + ConstZero
+        + WrappingMul
+        + WrappingAdd
+        + WrappingSub
+        + AddAssign
+        + MulAssign,
+    N: PrimInt + Unsigned + ConstOne + ConstZero + BitAnd,
 {
     let mut temp_r = r;
-    let mut mult = T::one();
-    let mut result = T::zero();
+    let mut mult = T::ONE;
+    let mut result = T::ZERO;
 
-    if n == N::zero() {
-        return T::zero();
+    if n == N::ZERO {
+        return T::ZERO;
     }
 
     let mut n_work = n;
-    while n_work > N::one() {
-        if n_work & N::one() != N::zero() {
-            result = wrapping_pow(temp_r, n_work - N::one()).wrapping_mul(&mult).wrapping_add(&result);
+    while n_work > N::ONE {
+        if n_work & N::ONE != N::ZERO {
+            result = wrapping_pow(temp_r, n_work - N::ONE)
+                .wrapping_mul(&mult)
+                .wrapping_add(&result);
         }
-        mult = (T::one().wrapping_add(&temp_r)).wrapping_mul(&mult);
+        mult = (T::ONE.wrapping_add(&temp_r)).wrapping_mul(&mult);
         temp_r = temp_r.wrapping_mul(&temp_r);
         n_work = n_work >> 1;
     }

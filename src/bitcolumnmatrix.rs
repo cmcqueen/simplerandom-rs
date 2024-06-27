@@ -4,12 +4,12 @@
 //! of a bit width that is suitable for the desired matrix dimensions.
 //! Eg for a 32×32 matrix, an array of u32 of length 32 is used.
 
-use num_traits::{One, Pow, PrimInt, Unsigned, Zero};
+use num_traits::{ConstOne, ConstZero, One, Pow, PrimInt, Unsigned, Zero};
 use std::ops::{BitAnd, Shl, Shr};
 
 /// Shorthand for traits needed in `BitColumnMatrix`.
-pub trait BitColumnMatrixInt: PrimInt + Unsigned + One + std::ops::BitXorAssign {}
-impl<T: PrimInt + Unsigned + One + std::ops::BitXorAssign> BitColumnMatrixInt for T {}
+pub trait BitColumnMatrixInt: PrimInt + Unsigned + ConstOne + ConstZero + std::ops::BitXorAssign {}
+impl<T: PrimInt + Unsigned + ConstOne + ConstZero + std::ops::BitXorAssign> BitColumnMatrixInt for T {}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BitColumnMatrix<T, const WIDTH: usize>
@@ -23,14 +23,6 @@ impl<T, const WIDTH: usize> BitColumnMatrix<T, WIDTH>
 where
     T: BitColumnMatrixInt,
 {
-    fn width_mask() -> T {
-        if WIDTH < (T::one().count_zeros() as usize) {
-            (T::one() << WIDTH) - T::one()
-        } else {
-            !(T::zero())
-        }
-    }
-
     pub fn new(init_data: &[T; WIDTH]) -> BitColumnMatrix<T, WIDTH> {
         BitColumnMatrix::<T, WIDTH> {
             columns: *init_data,
@@ -39,12 +31,12 @@ where
 
     pub fn shift(shift_value: i8) -> BitColumnMatrix<T, WIDTH> {
         let mut result = BitColumnMatrix::<T, WIDTH> {
-            columns: [T::zero(); WIDTH],
+            columns: [T::ZERO; WIDTH],
         };
         let mut value: T = if shift_value >= 0 {
-            T::one() << shift_value as usize
+            T::ONE << shift_value as usize
         } else {
-            T::zero()
+            T::ZERO
         };
         let mut shift_temp = shift_value;
         for i in 0..WIDTH {
@@ -52,7 +44,7 @@ where
             if shift_temp < 0 {
                 shift_temp += 1;
                 if shift_temp == 0 {
-                    value = T::one();
+                    value = T::ONE;
                 }
             } else {
                 value = value << 1;
@@ -62,10 +54,10 @@ where
     }
 
     pub fn dot_vec(&self, b: T) -> T {
-        let mut result: T = T::zero();
+        let mut result: T = T::ZERO;
         let mut b_temp = b;
         for i in 0..WIDTH {
-            if b_temp & T::one() != T::zero() {
+            if b_temp & T::ONE != T::ZERO {
                 result ^= self.columns[i];
             }
             b_temp = b_temp >> 1;
@@ -98,13 +90,13 @@ where
     /// Create a zero-matrix.
     fn zero() -> BitColumnMatrix<T, WIDTH> {
         BitColumnMatrix::<T, WIDTH> {
-            columns: [T::zero(); WIDTH],
+            columns: [T::ZERO; WIDTH],
         }
     }
 
     fn is_zero(&self) -> bool {
         for i in 0..WIDTH {
-            if self.columns[i] != T::zero() {
+            if self.columns[i] != T::ZERO {
                 return false;
             }
         }
@@ -119,9 +111,9 @@ where
     /// Create a unity-matrix. That is, ones on the diagonal, zeros elsewhere.
     fn one() -> BitColumnMatrix<T, WIDTH> {
         let mut result = BitColumnMatrix::<T, WIDTH> {
-            columns: [T::zero(); WIDTH],
+            columns: [T::ZERO; WIDTH],
         };
-        let mut value: T = T::one();
+        let mut value: T = T::ONE;
         for i in 0..WIDTH {
             result.columns[i] = value;
             value = value << 1;
@@ -133,7 +125,7 @@ where
 impl<N, T, const WIDTH: usize> Pow<N> for BitColumnMatrix<T, WIDTH>
 where
     T: BitColumnMatrixInt,
-    N: Unsigned + PrimInt + BitAnd + One + Zero,
+    N: Unsigned + PrimInt + BitAnd + ConstOne + ConstZero,
 {
     type Output = Self;
 
@@ -146,11 +138,11 @@ where
         let mut n_work: N = n;
 
         loop {
-            if n_work & N::one() != N::zero() {
+            if n_work & N::ONE != N::ZERO {
                 result.dot_equ(&temp_exp);
             }
             n_work = n_work >> 1;
-            if n_work == N::zero() {
+            if n_work == N::ZERO {
                 break;
             }
             let temp_exp2 = temp_exp.clone();
@@ -188,7 +180,7 @@ where
     /// The meaning of this is, this modifies a matrix so that its matrix-multiplication with an
     /// integer represents a bit operation that is shifted left.
     fn shl(self, n: usize) -> BitColumnMatrix<T, WIDTH> {
-        let mask = Self::width_mask();
+        let mask = crate::maths::bit_width_mask(WIDTH);
         let mut result = BitColumnMatrix::<T, WIDTH>::zero();
         for i in 0..WIDTH {
             result.columns[i] = (self.columns[i] << n) & mask;

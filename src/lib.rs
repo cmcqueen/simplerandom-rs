@@ -307,7 +307,7 @@ pub struct MWC2 {
 fn mwc_next<T>(x: T, multiplier: T) -> T
     where T: PrimInt + Unsigned + WrappingAdd + WrappingMul
 {
-    let width_bits = T::zero().count_zeros() as usize;
+    let width_bits = maths::size_of_bits::<T>();
     let half_width_bits = width_bits / 2;
     let half_width_mask: T = T::max_value() >> half_width_bits;
     (x & half_width_mask).wrapping_mul(&multiplier).wrapping_add(&(x >> half_width_bits))
