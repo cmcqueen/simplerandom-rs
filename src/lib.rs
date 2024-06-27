@@ -137,7 +137,7 @@ type BitColumnMatrix32 = bitcolumnmatrix::BitColumnMatrix::<u32, 32>;
 ///     s.jumpahead(1_000_000);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 2250891922);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Cong {
     cong: u32,
 }
@@ -214,7 +214,7 @@ impl RngJumpAhead for Cong {
 ///     s.jumpahead(1_000_000);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 1105614340);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct SHR3 {
     shr3: u32,
 }
@@ -298,7 +298,7 @@ impl RngJumpAhead for SHR3 {
 ///     s.jumpahead(1_000_000_000_000_i64);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 1656033328);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct MWC2 {
     upper: u32,
     lower: u32,
@@ -417,7 +417,7 @@ impl RngJumpAhead for MWC2 {
 ///     s.jumpahead(1_000_000_000_000_u64);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 1656029560);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct MWC1 {
     mwc: MWC2,
 }
@@ -481,7 +481,7 @@ impl RngJumpAhead for MWC1 {
 ///     s.jumpahead(1_000_000_000_000_000_000_i64);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 101779707);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct KISS {
     mwc: MWC2,
     cong: Cong,
@@ -552,7 +552,7 @@ impl RngJumpAhead for KISS {
 ///     s.jumpahead(1_000_000_000_000_000_000_i64);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 655025777);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct MWC64 {
     mwc: u64,
 }
@@ -630,7 +630,7 @@ impl RngJumpAhead for MWC64 {
 ///     s.jumpahead(1_000_000_000_000_000_000_i64);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 666798061);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct KISS2 {
     mwc: MWC64,
     cong: Cong,
@@ -725,7 +725,7 @@ fn lfsr_next_z(z: u32, a: u8, b: u8, c: u8, min_value: u32) -> u32 {
 ///     s.jumpahead(1_000_000_000_000_000_000_i64);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 1799734280);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LFSR88 {
     z1: u32,
     z2: u32,
@@ -860,7 +860,7 @@ impl RngJumpAhead for LFSR88 {
 ///     s.jumpahead(1_000_000_000_000_000_000_i64);
 ///     let r = s.next_u32();
 ///     assert_eq!(r, 2384440028);
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LFSR113 {
     z1: u32,
     z2: u32,
