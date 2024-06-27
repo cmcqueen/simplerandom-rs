@@ -10,12 +10,12 @@ pub const fn size_of_bits<T>() -> usize {
 
 pub fn bit_width_mask<T>(bit_width: usize) -> T
 where
-    T: PrimInt + ConstOne,
+    T: PrimInt + ConstOne + ConstZero,
 {
     if bit_width < size_of_bits::<T>() {
         (T::ONE << bit_width) - T::ONE
     } else {
-        !(T::ONE)
+        !(T::ZERO)
     }
 }
 

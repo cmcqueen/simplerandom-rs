@@ -71,6 +71,7 @@ fn test_shr() {
 #[test]
 fn test_shift() {
     let mask = simplerandom::maths::bit_width_mask::<u32>(32);
+    assert_eq!(mask, 0xFFFFFFFF);
     for shift_by in -31..31 {
         let shift = BitColumnMatrix32::shift(shift_by);
         let mut x = 0x8000000_u32;
