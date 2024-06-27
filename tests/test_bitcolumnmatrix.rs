@@ -70,13 +70,14 @@ fn test_shr() {
 
 #[test]
 fn test_shift() {
+    let mask = simplerandom::maths::bit_width_mask::<u32>(32);
     for shift_by in -31..31 {
         let shift = BitColumnMatrix32::shift(shift_by);
         let mut x = 0x8000000_u32;
         while x != 0 {
             let mul_result = shift.dot_vec(x);
             if shift_by >= 0 {
-                assert_eq!(mul_result, x << shift_by);
+                assert_eq!(mul_result, (x << shift_by) & mask);
             } else {
                 let shift_right_by = -shift_by;
                 assert_eq!(mul_result, x >> shift_right_by);

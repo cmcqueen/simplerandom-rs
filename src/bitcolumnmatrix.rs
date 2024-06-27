@@ -38,6 +38,7 @@ where
         } else {
             T::ZERO
         };
+        let mask = crate::maths::bit_width_mask(WIDTH);
         let mut shift_temp = shift_value;
         for i in 0..WIDTH {
             result.columns[i] = value;
@@ -47,7 +48,7 @@ where
                     value = T::ONE;
                 }
             } else {
-                value = value << 1;
+                value = (value << 1) & mask;
             }
         }
         result
