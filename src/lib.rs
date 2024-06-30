@@ -49,15 +49,15 @@
 //!
 //! | Generator   | Notes
 //! | ----------- | --------------------------------------------------------------------------------------------------------------
-//! | `MWC1`      | Two 32-bit MWCs combined. From [[mars1]](#mars1).
-//! | `MWC2`      | Very similar to `MWC1`, but slightly modified to improve its statistical properties.
-//! | `Cong`      | From [[mars2]](#mars2).
-//! | `SHR3`      | From [[mars2]](#mars2).
-//! | `MWC64`     | A single 64-bit multiply-with-carry calculation. From [[mars2]](#mars2).
-//! | `KISS`      | Combination of MWC2, Cong and SHR3. Based on [[mars1]](#mars1) but using Cong and SHR3 from [[mars2]](#mars2), and the modified MWC.
-//! | `KISS2`     | Combination of MWC64, Cong and SHR3. From [[mars2]](#mars2).
-//! | `LFSR113`   | Combined LFSR (Tausworthe) random number generator by L'Ecuyer. From [[lecuyer1]](#lecuyer1) [[lecuyer3]](#lecuyer3).
-//! | `LFSR88`    | Combined LFSR (Tausworthe) random number generator by L'Ecuyer. From [[lecuyer2]](#lecuyer2).
+//! | [`MWC1`]    | Two 32-bit MWCs combined. From [[mars1]](#mars1).
+//! | [`MWC2`]    | Very similar to `MWC1`, but slightly modified to improve its statistical properties.
+//! | [`Cong`]    | From [[mars2]](#mars2).
+//! | [`SHR3`]    | From [[mars2]](#mars2).
+//! | [`MWC64`]   | A single 64-bit multiply-with-carry calculation. From [[mars2]](#mars2).
+//! | [`KISS`]    | Combination of MWC2, Cong and SHR3. Based on [[mars1]](#mars1) but using Cong and SHR3 from [[mars2]](#mars2), and the modified MWC.
+//! | [`KISS2`]   | Combination of MWC64, Cong and SHR3. From [[mars2]](#mars2).
+//! | [`LFSR113`] | Combined LFSR (Tausworthe) random number generator by L'Ecuyer. From [[lecuyer1]](#lecuyer1) [[lecuyer3]](#lecuyer3).
+//! | [`LFSR88`]  | Combined LFSR (Tausworthe) random number generator by L'Ecuyer. From [[lecuyer2]](#lecuyer2).
 //!
 //! ## License
 //!
