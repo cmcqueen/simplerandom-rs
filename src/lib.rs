@@ -94,20 +94,20 @@
 //! [LFSR113 C double implementation](http://www.iro.umontreal.ca/~simardr/rng/lfsr113.c)  
 //! Pierre L'Ecuyer
 
-use rand_core::{RngCore, SeedableRng, Error, impls};
-use num_traits::{PrimInt, Unsigned, WrappingAdd, WrappingMul, Pow};
+use num_traits::{ConstZero, Pow, PrimInt, Unsigned, WrappingAdd, WrappingMul};
+use rand_core::{impls, Error, RngCore, SeedableRng};
 use std::ops::SubAssign;
 
-pub mod maths;
 pub mod bitcolumnmatrix;
+pub mod maths;
 
 pub trait RngJumpAhead {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes;
+    where
+        N: maths::IntTypes;
 }
 
-type BitColumnMatrix32 = bitcolumnmatrix::BitColumnMatrix::<u32, 32>;
-
+type BitColumnMatrix32 = bitcolumnmatrix::BitColumnMatrix<u32, 32>;
 
 pub trait Seedable32Rng: Sized {
     type Seed32: Sized + Default + AsMut<[u32]>;
@@ -119,6 +119,60 @@ pub trait Seedable32Rng: Sized {
     }
 }
 
+pub trait SeedableSimpleRandom<T>: Sized {
+    fn from_seed(seed: T) -> Self;
+}
+
+struct SeedIterator<I, T>
+where
+    I: Iterator<Item = T>,
+    T: PrimInt + Unsigned + ConstZero,
+{
+    in_iter: I,
+    last_value: Option<T>,
+    eof: bool,
+    repeat_last: bool,
+}
+
+impl<I, T> SeedIterator<I, T>
+where
+    I: Iterator<Item = T>,
+    T: PrimInt + Unsigned + ConstZero,
+{
+    fn new(i: I) -> SeedIterator<I, T> {
+        return SeedIterator {
+            in_iter: i,
+            last_value: Some(T::ZERO),
+            eof: false,
+            repeat_last: true,
+        };
+    }
+}
+
+impl<I, T> Iterator for SeedIterator<I, T>
+where
+    I: Iterator<Item = T>,
+    T: PrimInt + Unsigned + ConstZero,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.eof {
+            if self.repeat_last == false {
+                self.last_value = None;
+            }
+        } else {
+            let next_value = self.in_iter.next();
+            if next_value.is_none() {
+                self.eof = true;
+            }
+            if next_value.is_some() || !self.repeat_last {
+                self.last_value = next_value;
+            }
+        }
+        self.last_value
+    }
+}
 
 /* Cong ----------------------------------------------------------------------*/
 
@@ -160,9 +214,7 @@ impl Cong {
     const SEED32_WORDS: usize = 1;
 
     pub fn new(seed1: u32) -> Cong {
-        Cong {
-            cong: seed1,
-        }
+        Cong { cong: seed1 }
     }
 }
 impl RngCore for Cong {
@@ -182,7 +234,8 @@ impl RngCore for Cong {
 }
 impl RngJumpAhead for Cong {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         let n_mod = maths::modulo(n, Cong::CYCLE_LEN);
         let mult_exp = maths::wrapping_pow(Cong::M, n_mod);
@@ -192,18 +245,25 @@ impl RngJumpAhead for Cong {
     }
 }
 
-impl Seedable32Rng for Cong {
-    type Seed32 = [u32; Cong::SEED32_WORDS];
-
-    fn from_seed32(seed: Self::Seed32) -> Self {
+impl SeedableSimpleRandom<&[u32]> for Cong {
+    fn from_seed(seed: &[u32]) -> Self {
+        let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
         Cong {
-            cong: seed[0],
+            cong: seed_iter.next().unwrap(),
         }
     }
 }
 
+impl Seedable32Rng for Cong {
+    type Seed32 = [u32; Cong::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        Cong { cong: seed[0] }
+    }
+}
+
 impl SeedableRng for Cong {
-    type Seed = [u8; Cong::SEED32_WORDS*4];
+    type Seed = [u8; Cong::SEED32_WORDS * 4];
 
     fn from_seed(seed: Self::Seed) -> Self {
         Cong {
@@ -211,7 +271,6 @@ impl SeedableRng for Cong {
         }
     }
 }
-
 
 /* SHR3 ----------------------------------------------------------------------*/
 
@@ -255,9 +314,7 @@ impl SHR3 {
     const CYCLE_LEN: u32 = 0xFFFFFFFF;
 
     pub fn new(seed1: u32) -> SHR3 {
-        SHR3 {
-            shr3: seed1,
-        }
+        SHR3 { shr3: seed1 }
     }
     fn sanitise(&mut self) {
         if self.shr3 == 0 {
@@ -289,13 +346,15 @@ impl RngCore for SHR3 {
 }
 impl RngJumpAhead for SHR3 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         const SHR3_MATRIX_ARRAY: [u32; 32] = [
-            0x00042021, 0x00084042, 0x00108084, 0x00210108, 0x00420231, 0x00840462, 0x010808C4, 0x02101188,
-            0x04202310, 0x08404620, 0x10808C40, 0x21011880, 0x42023100, 0x84046200, 0x0808C400, 0x10118800,
-            0x20231000, 0x40462021, 0x808C4042, 0x01080084, 0x02100108, 0x04200210, 0x08400420, 0x10800840,
-            0x21001080, 0x42002100, 0x84004200, 0x08008400, 0x10010800, 0x20021000, 0x40042000, 0x80084000,
+            0x00042021, 0x00084042, 0x00108084, 0x00210108, 0x00420231, 0x00840462, 0x010808C4,
+            0x02101188, 0x04202310, 0x08404620, 0x10808C40, 0x21011880, 0x42023100, 0x84046200,
+            0x0808C400, 0x10118800, 0x20231000, 0x40462021, 0x808C4042, 0x01080084, 0x02100108,
+            0x04200210, 0x08400420, 0x10800840, 0x21001080, 0x42002100, 0x84004200, 0x08008400,
+            0x10010800, 0x20021000, 0x40042000, 0x80084000,
         ];
         let n_mod = maths::modulo(n, SHR3::CYCLE_LEN);
         self.sanitise();
@@ -305,6 +364,11 @@ impl RngJumpAhead for SHR3 {
     }
 }
 
+impl SeedableSimpleRandom<&[u32]> for SHR3 {
+    fn from_seed(seed: &[u32]) -> Self {
+        SHR3 { shr3: seed[0] }
+    }
+}
 
 /* MWC2 ----------------------------------------------------------------------*/
 
@@ -337,16 +401,20 @@ pub struct MWC2 {
 }
 
 fn mwc_next<T>(x: T, multiplier: T) -> T
-    where T: PrimInt + Unsigned + WrappingAdd + WrappingMul
+where
+    T: PrimInt + Unsigned + WrappingAdd + WrappingMul,
 {
     let width_bits = maths::size_of_bits::<T>();
     let half_width_bits = width_bits / 2;
     let half_width_mask: T = T::max_value() >> half_width_bits;
-    (x & half_width_mask).wrapping_mul(&multiplier).wrapping_add(&(x >> half_width_bits))
+    (x & half_width_mask)
+        .wrapping_mul(&multiplier)
+        .wrapping_add(&(x >> half_width_bits))
 }
 
 fn mwc_sanitise<T>(x: T, limit: T) -> T
-    where T: PrimInt + Unsigned + SubAssign
+where
+    T: PrimInt + Unsigned + SubAssign,
 {
     let mut temp = x;
     if temp >= limit {
@@ -380,7 +448,9 @@ impl MWC2 {
         self.lower = mwc_sanitise(self.lower, MWC2::LOWER_MOD);
     }
     fn current(&self) -> u32 {
-        self.lower.wrapping_add(self.upper << 16).wrapping_add(self.upper >> 16)
+        self.lower
+            .wrapping_add(self.upper << 16)
+            .wrapping_add(self.upper >> 16)
     }
 }
 impl RngCore for MWC2 {
@@ -403,17 +473,35 @@ impl RngCore for MWC2 {
 }
 impl RngJumpAhead for MWC2 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         let n_upper = maths::modulo(n, MWC2::UPPER_CYCLE_LEN);
         let n_lower = maths::modulo(n, MWC2::LOWER_CYCLE_LEN);
 
         self.sanitise();
-        self.upper = maths::mul_mod(maths::pow_mod(MWC2::UPPER_M, n_upper, MWC2::UPPER_MOD), self.upper, MWC2::UPPER_MOD);
-        self.lower = maths::mul_mod(maths::pow_mod(MWC2::LOWER_M, n_lower, MWC2::LOWER_MOD), self.lower, MWC2::LOWER_MOD);
+        self.upper = maths::mul_mod(
+            maths::pow_mod(MWC2::UPPER_M, n_upper, MWC2::UPPER_MOD),
+            self.upper,
+            MWC2::UPPER_MOD,
+        );
+        self.lower = maths::mul_mod(
+            maths::pow_mod(MWC2::LOWER_M, n_lower, MWC2::LOWER_MOD),
+            self.lower,
+            MWC2::LOWER_MOD,
+        );
     }
 }
 
+impl SeedableSimpleRandom<&[u32]> for MWC2 {
+    fn from_seed(seed: &[u32]) -> Self {
+        let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
+        MWC2 {
+            upper: seed_iter.next().unwrap(),
+            lower: seed_iter.next().unwrap(),
+        }
+    }
+}
 
 /* MWC1 ----------------------------------------------------------------------*/
 
@@ -481,12 +569,20 @@ impl RngCore for MWC1 {
 }
 impl RngJumpAhead for MWC1 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         self.mwc.jumpahead(n);
     }
 }
 
+impl SeedableSimpleRandom<&[u32]> for MWC1 {
+    fn from_seed(seed: &[u32]) -> Self {
+        MWC1 {
+            mwc: MWC2::from_seed(seed),
+        }
+    }
+}
 
 /* KISS ----------------------------------------------------------------------*/
 
@@ -552,7 +648,8 @@ impl RngCore for KISS {
 }
 impl RngJumpAhead for KISS {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         self.mwc.jumpahead(n);
         self.cong.jumpahead(n);
@@ -560,6 +657,16 @@ impl RngJumpAhead for KISS {
     }
 }
 
+impl SeedableSimpleRandom<&[u32]> for KISS {
+    fn from_seed(seed: &[u32]) -> Self {
+        let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
+        KISS {
+            mwc: MWC2::new(seed_iter.next().unwrap(), seed_iter.next().unwrap()),
+            cong: Cong::new(seed_iter.next().unwrap()),
+            shr3: SHR3::new(seed_iter.next().unwrap()),
+        }
+    }
+}
 
 /* MWC64 ---------------------------------------------------------------------*/
 
@@ -629,14 +736,29 @@ impl RngCore for MWC64 {
 }
 impl RngJumpAhead for MWC64 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         let n_mod = maths::modulo(n, MWC64::CYCLE_LEN);
         self.sanitise();
-        self.mwc = maths::mul_mod(maths::pow_mod(MWC64::M, n_mod, MWC64::MOD), self.mwc, MWC64::MOD);
+        self.mwc = maths::mul_mod(
+            maths::pow_mod(MWC64::M, n_mod, MWC64::MOD),
+            self.mwc,
+            MWC64::MOD,
+        );
     }
 }
 
+impl SeedableSimpleRandom<&[u32]> for MWC64 {
+    fn from_seed(seed: &[u32]) -> Self {
+        let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
+        let seed1 = seed_iter.next().unwrap();
+        let seed2 = seed_iter.next().unwrap();
+        MWC64 {
+            mwc: (((seed1 as u64) << 32) ^ (seed2 as u64)),
+        }
+    }
+}
 
 /* KISS2 ---------------------------------------------------------------------*/
 
@@ -678,7 +800,10 @@ impl KISS2 {
         }
     }
     fn current(&self) -> u32 {
-        self.mwc.current().wrapping_add(self.cong.cong).wrapping_add(self.shr3.shr3)
+        self.mwc
+            .current()
+            .wrapping_add(self.cong.cong)
+            .wrapping_add(self.shr3.shr3)
     }
 }
 impl RngCore for KISS2 {
@@ -701,7 +826,8 @@ impl RngCore for KISS2 {
 }
 impl RngJumpAhead for KISS2 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         self.mwc.jumpahead(n);
         self.cong.jumpahead(n);
@@ -709,6 +835,16 @@ impl RngJumpAhead for KISS2 {
     }
 }
 
+impl SeedableSimpleRandom<&[u32]> for KISS2 {
+    fn from_seed(seed: &[u32]) -> Self {
+        let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
+        KISS2 {
+            mwc: MWC64::new(seed_iter.next().unwrap(), seed_iter.next().unwrap()),
+            cong: Cong::new(seed_iter.next().unwrap()),
+            shr3: SHR3::new(seed_iter.next().unwrap()),
+        }
+    }
+}
 
 /* LFSR ----------------------------------------------------------------------*/
 
@@ -729,7 +865,6 @@ fn lfsr_next_z(z: u32, a: u8, b: u8, c: u8, min_value: u32) -> u32 {
     let b = ((z << a) ^ z) >> b;
     ((z & mask) << c) ^ b
 }
-
 
 /* LFSR88 --------------------------------------------------------------------*/
 
@@ -824,25 +959,29 @@ impl RngCore for LFSR88 {
 }
 impl RngJumpAhead for LFSR88 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         const LFSR88_Z1_MATRIX_ARRAY: [u32; 32] = [
-            0x00000000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040001, 0x00080002,
-            0x00100004, 0x00200008, 0x00400010, 0x00800020, 0x01000040, 0x02000080, 0x04000100, 0x08000200,
-            0x10000400, 0x20000800, 0x40001000, 0x80000001, 0x00000002, 0x00000004, 0x00000008, 0x00000010,
-            0x00000020, 0x00000040, 0x00000080, 0x00000100, 0x00000200, 0x00000400, 0x00000800, 0x00001000
+            0x00000000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040001,
+            0x00080002, 0x00100004, 0x00200008, 0x00400010, 0x00800020, 0x01000040, 0x02000080,
+            0x04000100, 0x08000200, 0x10000400, 0x20000800, 0x40001000, 0x80000001, 0x00000002,
+            0x00000004, 0x00000008, 0x00000010, 0x00000020, 0x00000040, 0x00000080, 0x00000100,
+            0x00000200, 0x00000400, 0x00000800, 0x00001000,
         ];
         const LFSR88_Z2_MATRIX_ARRAY: [u32; 32] = [
-            0x00000000, 0x00000000, 0x00000000, 0x00000080, 0x00000100, 0x00000200, 0x00000400, 0x00000800,
-            0x00001000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040000, 0x00080000,
-            0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x01000000, 0x02000000, 0x04000000, 0x08000001,
-            0x10000002, 0x20000005, 0x4000000A, 0x80000014, 0x00000028, 0x00000050, 0x00000020, 0x00000040
+            0x00000000, 0x00000000, 0x00000000, 0x00000080, 0x00000100, 0x00000200, 0x00000400,
+            0x00000800, 0x00001000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000,
+            0x00040000, 0x00080000, 0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x01000000,
+            0x02000000, 0x04000000, 0x08000001, 0x10000002, 0x20000005, 0x4000000A, 0x80000014,
+            0x00000028, 0x00000050, 0x00000020, 0x00000040,
         ];
         const LFSR88_Z3_MATRIX_ARRAY: [u32; 32] = [
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200000, 0x00400000, 0x00800000, 0x01000000,
-            0x02000001, 0x04000002, 0x08000004, 0x10000009, 0x20000012, 0x40000024, 0x80000048, 0x00000090,
-            0x00000120, 0x00000240, 0x00000480, 0x00000900, 0x00001200, 0x00002400, 0x00004800, 0x00009000,
-            0x00012000, 0x00024000, 0x00048000, 0x00090000, 0x00120000, 0x00040000, 0x00080000, 0x00100000
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00200000, 0x00400000, 0x00800000,
+            0x01000000, 0x02000001, 0x04000002, 0x08000004, 0x10000009, 0x20000012, 0x40000024,
+            0x80000048, 0x00000090, 0x00000120, 0x00000240, 0x00000480, 0x00000900, 0x00001200,
+            0x00002400, 0x00004800, 0x00009000, 0x00012000, 0x00024000, 0x00048000, 0x00090000,
+            0x00120000, 0x00040000, 0x00080000, 0x00100000,
         ];
 
         let n_z1 = maths::modulo(n, LFSR88::Z1_CYCLE_LEN);
@@ -865,6 +1004,16 @@ impl RngJumpAhead for LFSR88 {
     }
 }
 
+impl SeedableSimpleRandom<&[u32]> for LFSR88 {
+    fn from_seed(seed: &[u32]) -> Self {
+        let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
+        LFSR88 {
+            z1: lfsr_seed_z(seed_iter.next().unwrap()),
+            z2: lfsr_seed_z(seed_iter.next().unwrap()),
+            z3: lfsr_seed_z(seed_iter.next().unwrap()),
+        }
+    }
+}
 
 /* LFSR113 -------------------------------------------------------------------*/
 
@@ -971,31 +1120,36 @@ impl RngCore for LFSR113 {
 }
 impl RngJumpAhead for LFSR113 {
     fn jumpahead<N>(&mut self, n: N)
-        where N: maths::IntTypes
+    where
+        N: maths::IntTypes,
     {
         const LFSR113_Z1_MATRIX_ARRAY: [u32; 32] = [
-            0x00000000, 0x00080000, 0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x01000000, 0x02000001,
-            0x04000002, 0x08000004, 0x10000008, 0x20000010, 0x40000020, 0x80000041, 0x00000082, 0x00000104,
-            0x00000208, 0x00000410, 0x00000820, 0x00001040, 0x00002080, 0x00004100, 0x00008200, 0x00010400,
-            0x00020800, 0x00041000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000, 0x00040000
+            0x00000000, 0x00080000, 0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x01000000,
+            0x02000001, 0x04000002, 0x08000004, 0x10000008, 0x20000010, 0x40000020, 0x80000041,
+            0x00000082, 0x00000104, 0x00000208, 0x00000410, 0x00000820, 0x00001040, 0x00002080,
+            0x00004100, 0x00008200, 0x00010400, 0x00020800, 0x00041000, 0x00002000, 0x00004000,
+            0x00008000, 0x00010000, 0x00020000, 0x00040000,
         ];
         const LFSR113_Z2_MATRIX_ARRAY: [u32; 32] = [
-            0x00000000, 0x00000000, 0x00000000, 0x00000020, 0x00000040, 0x00000080, 0x00000100, 0x00000200,
-            0x00000400, 0x00000800, 0x00001000, 0x00002000, 0x00004000, 0x00008000, 0x00010000, 0x00020000,
-            0x00040000, 0x00080000, 0x00100000, 0x00200000, 0x00400000, 0x00800000, 0x01000000, 0x02000000,
-            0x04000000, 0x08000001, 0x10000002, 0x20000005, 0x4000000A, 0x80000014, 0x00000008, 0x00000010
+            0x00000000, 0x00000000, 0x00000000, 0x00000020, 0x00000040, 0x00000080, 0x00000100,
+            0x00000200, 0x00000400, 0x00000800, 0x00001000, 0x00002000, 0x00004000, 0x00008000,
+            0x00010000, 0x00020000, 0x00040000, 0x00080000, 0x00100000, 0x00200000, 0x00400000,
+            0x00800000, 0x01000000, 0x02000000, 0x04000000, 0x08000001, 0x10000002, 0x20000005,
+            0x4000000A, 0x80000014, 0x00000008, 0x00000010,
         ];
         const LFSR113_Z3_MATRIX_ARRAY: [u32; 32] = [
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000800, 0x00001000, 0x00002000, 0x00004000,
-            0x00008001, 0x00010002, 0x00020004, 0x00040008, 0x00080010, 0x00100020, 0x00200040, 0x00400080,
-            0x00800100, 0x01000200, 0x02000400, 0x04000000, 0x08000000, 0x10000001, 0x20000002, 0x40000004,
-            0x80000008, 0x00000010, 0x00000020, 0x00000040, 0x00000080, 0x00000100, 0x00000200, 0x00000400
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000800, 0x00001000, 0x00002000,
+            0x00004000, 0x00008001, 0x00010002, 0x00020004, 0x00040008, 0x00080010, 0x00100020,
+            0x00200040, 0x00400080, 0x00800100, 0x01000200, 0x02000400, 0x04000000, 0x08000000,
+            0x10000001, 0x20000002, 0x40000004, 0x80000008, 0x00000010, 0x00000020, 0x00000040,
+            0x00000080, 0x00000100, 0x00000200, 0x00000400,
         ];
         const LFSR113_Z4_MATRIX_ARRAY: [u32; 32] = [
-            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00100000,
-            0x00200000, 0x00400001, 0x00800002, 0x01000004, 0x02000009, 0x04000012, 0x08000024, 0x10000048,
-            0x20000090, 0x40000120, 0x80000240, 0x00000480, 0x00000900, 0x00001200, 0x00002400, 0x00004800,
-            0x00009000, 0x00012000, 0x00024000, 0x00048000, 0x00090000, 0x00020000, 0x00040000, 0x00080000
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00100000, 0x00200000, 0x00400001, 0x00800002, 0x01000004, 0x02000009, 0x04000012,
+            0x08000024, 0x10000048, 0x20000090, 0x40000120, 0x80000240, 0x00000480, 0x00000900,
+            0x00001200, 0x00002400, 0x00004800, 0x00009000, 0x00012000, 0x00024000, 0x00048000,
+            0x00090000, 0x00020000, 0x00040000, 0x00080000,
         ];
 
         let n_z1 = maths::modulo(n, LFSR113::Z1_CYCLE_LEN);
@@ -1021,5 +1175,17 @@ impl RngJumpAhead for LFSR113 {
         let lfsr113_matrix = BitColumnMatrix32::new(&LFSR113_Z4_MATRIX_ARRAY);
         let lfsr113_mult = lfsr113_matrix.pow(n_z4);
         self.z4 = lfsr113_mult.dot_vec(self.z4);
+    }
+}
+
+impl SeedableSimpleRandom<&[u32]> for LFSR113 {
+    fn from_seed(seed: &[u32]) -> Self {
+        let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
+        LFSR113 {
+            z1: lfsr_seed_z(seed_iter.next().unwrap()),
+            z2: lfsr_seed_z(seed_iter.next().unwrap()),
+            z3: lfsr_seed_z(seed_iter.next().unwrap()),
+            z4: lfsr_seed_z(seed_iter.next().unwrap()),
+        }
     }
 }

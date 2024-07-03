@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use rand_core::RngCore;
-use simplerandom::{RngJumpAhead, Seedable32Rng};
+use simplerandom::{RngJumpAhead, SeedableSimpleRandom};
 //use rand::Rng;
 
 fn test_new_and_next_u32() {
@@ -27,29 +27,42 @@ fn test_new_and_next_u32() {
 }
 
 fn test_maths() {
-    println!("wrapping_pow {}", simplerandom::maths::wrapping_pow(123456789_u32, 123456789_u32));
-    println!("pow_mod {:#X}", simplerandom::maths::pow_mod(0xDC28D76F_usize,
-                                                            0x732E73C3_usize,
-                                                            0xEC327D45_usize));
-    println!("pow_mod {:#X}", simplerandom::maths::pow_mod(0xDC28D76FFD9338E9D868AF566191DE10_u128,
-                                                            0x732E73C316878E244FDFDE4EE623CDCC_u128,
-                                                            0xEC327D45470669CC56B547B6FE6888A2_u128));
-    println!("wrapping_geom_series {}", simplerandom::maths::wrapping_geom_series(12345_u32, 12345_u32));
+    println!(
+        "wrapping_pow {}",
+        simplerandom::maths::wrapping_pow(123456789_u32, 123456789_u32)
+    );
+    println!(
+        "pow_mod {:#X}",
+        simplerandom::maths::pow_mod(0xDC28D76F_usize, 0x732E73C3_usize, 0xEC327D45_usize)
+    );
+    println!(
+        "pow_mod {:#X}",
+        simplerandom::maths::pow_mod(
+            0xDC28D76FFD9338E9D868AF566191DE10_u128,
+            0x732E73C316878E244FDFDE4EE623CDCC_u128,
+            0xEC327D45470669CC56B547B6FE6888A2_u128
+        )
+    );
+    println!(
+        "wrapping_geom_series {}",
+        simplerandom::maths::wrapping_geom_series(12345_u32, 12345_u32)
+    );
 }
 
 fn test_seed() {
     let s = [2_u32; 1];
 
-    let mut rng = simplerandom::Cong::from_seed32(s);
-    //let mut rng = simplerandom::SHR3::from_seed(s);
-    //let mut rng = simplerandom::MWC1::from_seed(s);
-    //let mut rng = simplerandom::MWC2::from_seed(s);
-    //let mut rng = simplerandom::KISS::from_seed(s);
-    //let mut rng = simplerandom::MWC64::from_seed(s);
-    //let mut rng = simplerandom::KISS2::from_seed(s);
-    //let mut rng = simplerandom::LFSR88::from_seed(s);
-    //let mut rng = simplerandom::LFSR113::from_seed(s);
+    let mut rng = simplerandom::Cong::from_seed(&s);
+    //let mut rng = simplerandom::SHR3::from_seed(&s);
+    //let mut rng = simplerandom::MWC1::from_seed(&s);
+    //let mut rng = simplerandom::MWC2::from_seed(&s);
+    //let mut rng = simplerandom::KISS::from_seed(&s);
+    //let mut rng = simplerandom::MWC64::from_seed(&s);
+    //let mut rng = simplerandom::KISS2::from_seed(&s);
+    //let mut rng = simplerandom::LFSR88::from_seed(&s);
+    //let mut rng = simplerandom::LFSR113::from_seed(&s);
 
+    println!("{:?}", rng);
     for _ in 0..4 {
         let rng_result = rng.next_u32();
         println!("{}, {:?}", rng_result, rng);
@@ -57,7 +70,7 @@ fn test_seed() {
 }
 
 fn main() {
-//    test_new_and_next_u32();
+    // test_new_and_next_u32();
     test_seed();
 
     println!("");
