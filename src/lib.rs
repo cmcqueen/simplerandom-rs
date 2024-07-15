@@ -113,10 +113,6 @@ pub trait Seedable32Rng: Sized {
     type Seed32: Sized + Default + AsMut<[u32]>;
 
     fn from_seed32(seed: Self::Seed32) -> Self;
-
-    fn from_seed(seed: Self::Seed32) -> Self {
-        Self::from_seed32(seed)
-    }
 }
 
 pub trait SeedableSimpleRandom<T>: Sized {
@@ -312,6 +308,7 @@ pub struct SHR3 {
 
 impl SHR3 {
     const CYCLE_LEN: u32 = 0xFFFFFFFF;
+    const SEED32_WORDS: usize = 1;
 
     pub fn new(seed1: u32) -> SHR3 {
         SHR3 { shr3: seed1 }
@@ -369,6 +366,15 @@ impl SeedableSimpleRandom<&[u32]> for SHR3 {
         SHR3 { shr3: seed[0] }
     }
 }
+
+impl Seedable32Rng for SHR3 {
+    type Seed32 = [u32; SHR3::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        SHR3 { shr3: seed[0] }
+    }
+}
+
 
 /* MWC2 ----------------------------------------------------------------------*/
 
@@ -436,6 +442,7 @@ impl MWC2 {
     const LOWER_MOD: u32 = (MWC2::LOWER_M << 16) - 1;
     const UPPER_CYCLE_LEN: u32 = (MWC2::UPPER_M << 16) / 2 - 1;
     const LOWER_CYCLE_LEN: u32 = (MWC2::LOWER_M << 16) / 2 - 1;
+    const SEED32_WORDS: usize = 2;
 
     pub fn new(seed1: u32, seed2: u32) -> MWC2 {
         MWC2 {
@@ -493,6 +500,14 @@ impl RngJumpAhead for MWC2 {
     }
 }
 
+impl Seedable32Rng for MWC2 {
+    type Seed32 = [u32; MWC2::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        MWC2 { upper: seed[0], lower: seed[1] }
+    }
+}
+
 impl SeedableSimpleRandom<&[u32]> for MWC2 {
     fn from_seed(seed: &[u32]) -> Self {
         let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
@@ -543,6 +558,8 @@ pub struct MWC1 {
 }
 
 impl MWC1 {
+    const SEED32_WORDS: usize = 2;
+
     pub fn new(seed1: u32, seed2: u32) -> MWC1 {
         MWC1 {
             mwc: MWC2::new(seed1, seed2),
@@ -573,6 +590,14 @@ impl RngJumpAhead for MWC1 {
         N: maths::IntTypes,
     {
         self.mwc.jumpahead(n);
+    }
+}
+
+impl Seedable32Rng for MWC1 {
+    type Seed32 = [u32; MWC1::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        MWC1 { mwc: MWC2::from_seed32(seed), }
     }
 }
 
@@ -617,6 +642,8 @@ pub struct KISS {
 }
 
 impl KISS {
+    const SEED32_WORDS: usize = 4;
+
     pub fn new(seed1: u32, seed2: u32, seed3: u32, seed4: u32) -> KISS {
         KISS {
             mwc: MWC2::new(seed1, seed2),
@@ -668,6 +695,19 @@ impl SeedableSimpleRandom<&[u32]> for KISS {
     }
 }
 
+impl Seedable32Rng for KISS {
+    type Seed32 = [u32; KISS::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        KISS {
+            mwc: MWC2::new(seed[0], seed[1]),
+            cong: Cong::new(seed[2]),
+            shr3: SHR3::new(seed[3]),
+        }
+
+    }
+}
+
 /* MWC64 ---------------------------------------------------------------------*/
 
 /// MWC64 -- "Multiply-with-carry" random number generator
@@ -700,6 +740,7 @@ impl MWC64 {
     const M: u64 = 698769069;
     const MOD: u64 = (MWC64::M << 32) - 1;
     const CYCLE_LEN: u64 = (MWC64::M << 32) / 2 - 1;
+    const SEED32_WORDS: usize = 2;
 
     pub fn new(seed1: u32, seed2: u32) -> MWC64 {
         MWC64 {
@@ -749,6 +790,16 @@ impl RngJumpAhead for MWC64 {
     }
 }
 
+impl Seedable32Rng for MWC64 {
+    type Seed32 = [u32; MWC64::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        MWC64 {
+            mwc: (((seed[0] as u64) << 32) ^ (seed[1] as u64)),
+        }
+    }
+}
+
 impl SeedableSimpleRandom<&[u32]> for MWC64 {
     fn from_seed(seed: &[u32]) -> Self {
         let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
@@ -792,6 +843,8 @@ pub struct KISS2 {
 }
 
 impl KISS2 {
+    const SEED32_WORDS: usize = 4;
+
     pub fn new(seed1: u32, seed2: u32, seed3: u32, seed4: u32) -> KISS2 {
         KISS2 {
             mwc: MWC64::new(seed1, seed2),
@@ -832,6 +885,19 @@ impl RngJumpAhead for KISS2 {
         self.mwc.jumpahead(n);
         self.cong.jumpahead(n);
         self.shr3.jumpahead(n);
+    }
+}
+
+impl Seedable32Rng for KISS2 {
+    type Seed32 = [u32; KISS2::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        KISS2 {
+            mwc: MWC64::new(seed[0], seed[1]),
+            cong: Cong::new(seed[2]),
+            shr3: SHR3::new(seed[3]),
+        }
+
     }
 }
 
@@ -906,6 +972,7 @@ impl LFSR88 {
     const Z1_CYCLE_LEN: u32 = (1 << (32 - 1)) - 1;
     const Z2_CYCLE_LEN: u32 = (1 << (32 - 3)) - 1;
     const Z3_CYCLE_LEN: u32 = (1 << (32 - 4)) - 1;
+    const SEED32_WORDS: usize = 3;
 
     pub fn new(seed1: u32, seed2: u32, seed3: u32) -> LFSR88 {
         LFSR88 {
@@ -1004,6 +1071,18 @@ impl RngJumpAhead for LFSR88 {
     }
 }
 
+impl Seedable32Rng for LFSR88 {
+    type Seed32 = [u32; LFSR88::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        LFSR88 {
+            z1: lfsr_seed_z(seed[0]),
+            z2: lfsr_seed_z(seed[1]),
+            z3: lfsr_seed_z(seed[2]),
+        }
+    }
+}
+
 impl SeedableSimpleRandom<&[u32]> for LFSR88 {
     fn from_seed(seed: &[u32]) -> Self {
         let mut seed_iter = SeedIterator::new(seed.into_iter().copied());
@@ -1058,6 +1137,7 @@ impl LFSR113 {
     const Z2_CYCLE_LEN: u32 = (1 << (32 - 3)) - 1;
     const Z3_CYCLE_LEN: u32 = (1 << (32 - 4)) - 1;
     const Z4_CYCLE_LEN: u32 = (1 << (32 - 7)) - 1;
+    const SEED32_WORDS: usize = 4;
 
     pub fn new(seed1: u32, seed2: u32, seed3: u32, seed4: u32) -> LFSR113 {
         LFSR113 {
@@ -1175,6 +1255,19 @@ impl RngJumpAhead for LFSR113 {
         let lfsr113_matrix = BitColumnMatrix32::new(&LFSR113_Z4_MATRIX_ARRAY);
         let lfsr113_mult = lfsr113_matrix.pow(n_z4);
         self.z4 = lfsr113_mult.dot_vec(self.z4);
+    }
+}
+
+impl Seedable32Rng for LFSR113 {
+    type Seed32 = [u32; LFSR113::SEED32_WORDS];
+
+    fn from_seed32(seed: Self::Seed32) -> Self {
+        LFSR113 {
+            z1: lfsr_seed_z(seed[0]),
+            z2: lfsr_seed_z(seed[1]),
+            z3: lfsr_seed_z(seed[2]),
+            z4: lfsr_seed_z(seed[3]),
+        }
     }
 }
 
